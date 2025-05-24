@@ -2,6 +2,10 @@
 #include <cmath>
 #include <limits>
 
+using namespace std;
+using namespace robot_interfaces::msg;
+using namespace robot_interfaces::srv;
+
 RobotInputMapper::RobotInputMapper(float max_speed)
     : max_speed_(max_speed) {}
 
@@ -28,22 +32,22 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
 
     if (edge(0))
     { // Cross: Fire
-        out.request_action = 1; 
+        out.request_action = 1;
         out.has_request_action = true;
     }
     if (edge(2))
     { // Triangle: Brace
-        out.request_action = 2; 
+        out.request_action = 2;
         out.has_request_action = true;
     }
     if (edge(3))
     { // Square: Dribble
-        out.request_action = 3; 
+        out.request_action = 3;
         out.has_request_action = true;
     }
     if (edge(1))
     { // Circle: Auto
-        out.request_action = 4; 
+        out.request_action = 4;
         out.has_request_action = true;
     }
 
@@ -65,7 +69,7 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
     }
     if (edge(12))
     { // R3: Homing
-        out.request_mcu = 2; 
+        out.request_mcu = 2;
         out.has_request_mcu = true;
     }
     if (edge(8))
@@ -86,16 +90,29 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
     /*---------------- MANUAL vs SEMI-AUTO ----------------*/
     if (!semi_auto_)
     { /************  MANUAL  ************/
-        robot_interfaces::msg::BaseCmd cmd;
+        BaseCmd cmd;
 
         /* velocity : L2 (-) + R2 (+) */
-        float v_neg = -s.axes[4] * max_speed_; // L2
-        float v_pos = s.axes[5] * max_speed_;  // R2
-        cmd.velocity = (fabs(v_pos) > fabs(v_neg)) ? v_pos : v_neg;
+        constexpr float SAFEZONE = 0.05f;
+
+        float t_neg = s.axes[4]; // L2
+        float t_pos = s.axes[5]; // R2
+
+        if (t_neg < SAFEZONE)
+            t_neg = 0.0f;
+        if (t_pos < SAFEZONE)
+            t_pos = 0.0f;
+            
+        float raw = t_pos - t_neg; 
+        if (fabs(raw) < SAFEZONE)
+        {
+            raw = 0.0f;
+        }
+        cmd.velocity = raw * max_speed_;
 
         /* angle : L-Stick */
         float lx = s.axes[0], ly = s.axes[1];
-        if (hypot(lx, ly) > 0.1f)
+        if (hypot(lx, ly) > 0.2f)
         {
             float raw = -atan2(-lx, -ly) * 180 / M_PI;
 
@@ -105,7 +122,7 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
                 prev_raw_angle_ = raw;
                 first_angle_read_ = false;
             }
-            else 
+            else
             {
                 float delta = raw - prev_raw_angle_;
                 if (delta > 180.0f)
@@ -119,7 +136,7 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
         }
         else
         {
-            first_angle_read_= true;
+            first_angle_read_ = true;
             cmd.angle = 0.0f;
         }
 

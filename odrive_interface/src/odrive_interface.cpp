@@ -13,7 +13,7 @@ using ControlSrv = robot_interfaces::srv::Control;
 using PushBall = robot_interfaces::srv::PushBall;
 using OdriveSrv = robot_interfaces::srv::RequestOdrive;
 
-static constexpr float BRACE_ON_POS = 12.0f;
+static constexpr float BRACE_ON_POS = -12.0f;
 static constexpr float BRACE_OFF_POS = 0.0f;
 static const vector<uint8_t> SHOOTER_MOTOR_IDS = {0, 1, 2};
 static const vector<uint8_t> DRIBBLE_MOTOR_IDS = {3, 4};
@@ -125,7 +125,7 @@ public:
   {
     for (int id = 0; id < 6; id++)
       motors_[id]->setTarget(0.0f);
-    RCLCPP_INFO(get_logger(), "RESET done");
+    RCLCPP_INFO(get_logger(), "Reset done");
     brace_on_ = false;
   }
 
@@ -156,6 +156,7 @@ public:
     // 1) bắn 0-1-2 ở chế độ velocity
     for (auto id : SHOOTER_MOTOR_IDS)
       motors_[id]->setTarget(static_cast<float>(vel));
+    RCLCPP_INFO(get_logger(), "Shooter speed set to %.1f", vel);
 
     // 2) sau 0.5 s gọi /push_ball – không block
     thread([this]()
@@ -258,7 +259,7 @@ public:
     /**************** 3. BRACE OFF ****************/
     motors_[BRACE_MOTOR_ID]->setTarget(BRACE_OFF_POS);
     brace_on_ = false;
-    RCLCPP_INFO(get_logger(), "Auto: brace OFF ⇒ chờ về vị trí 0");
+    RCLCPP_INFO(get_logger(), "Auto: brace OFF");
 
     /**************** 4. Đợi feedback vị trí = 0 ****************/
     constexpr float POS_EPS = 0.1f;                  // dung sai

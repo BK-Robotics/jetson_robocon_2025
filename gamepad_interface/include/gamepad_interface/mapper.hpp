@@ -7,11 +7,13 @@
 #include <optional>
 
 using namespace std;
+using namespace robot_interfaces::msg;
+using namespace robot_interfaces::srv;
 
 struct MapperOutput
 {
     bool has_base_cmd{false};
-    robot_interfaces::msg::BaseCmd base_cmd;
+    BaseCmd base_cmd;
 
     bool has_request_mcu{false};
     uint8_t request_mcu{0};

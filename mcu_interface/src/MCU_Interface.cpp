@@ -142,7 +142,7 @@ void UARTNode::process_uart_queue() {
             if (i != frame.size() - 1) oss << " ";
         }
         oss << "]";
-        RCLCPP_INFO(this->get_logger(), "%s", oss.str().c_str());
+        // RCLCPP_INFO(this->get_logger(), "%s", oss.str().c_str());
     }
     else{
         if (!uart_queue_.empty()) {
@@ -166,7 +166,7 @@ void UARTNode::process_uart_queue() {
                 if (i != frame.size() - 1) oss << " ";
             }
             oss << "]";
-            RCLCPP_INFO(this->get_logger(), "%s", oss.str().c_str());
+            //RCLCPP_INFO(this->get_logger(), "%s", oss.str().c_str());
         }
     }
 }

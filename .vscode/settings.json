@@ -1,0 +1,31 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/ddon/robocon2025_ws/install/main_controller_pkg/lib/python3.10/site-packages",
+        "/home/ddon/robocon2025_ws/install/robot_interfaces/local/lib/python3.10/dist-packages",
+        "/home/ddon/robocon2025_ws/install/astra_camera_msgs/local/lib/python3.10/dist-packages",
+        "/home/ddon/ros2_ws_cpp/install/shooter_control/lib/python3.12/site-packages",
+        "/home/ddon/ros2_ws_cpp/install/robot_interfaces/lib/python3.12/site-packages",
+        "/home/ddon/ros2_ws_cpp/install/odrive_custom_msg/lib/python3.12/site-packages",
+        "/home/ddon/ros2_ws_cpp/install/mecanum_drivetrain/lib/python3.12/site-packages",
+        "/home/ddon/ros2_ws_cpp/install/astra_camera_msgs/lib/python3.12/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/ddon/robocon2025_ws/install/main_controller_pkg/lib/python3.10/site-packages",
+        "/home/ddon/robocon2025_ws/install/robot_interfaces/local/lib/python3.10/dist-packages",
+        "/home/ddon/robocon2025_ws/install/astra_camera_msgs/local/lib/python3.10/dist-packages",
+        "/home/ddon/ros2_ws_cpp/install/shooter_control/lib/python3.12/site-packages",
+        "/home/ddon/ros2_ws_cpp/install/robot_interfaces/lib/python3.12/site-packages",
+        "/home/ddon/ros2_ws_cpp/install/odrive_custom_msg/lib/python3.12/site-packages",
+        "/home/ddon/ros2_ws_cpp/install/mecanum_drivetrain/lib/python3.12/site-packages",
+        "/home/ddon/ros2_ws_cpp/install/astra_camera_msgs/lib/python3.12/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "files.associations": {
+        "*.c": "c",
+        "chrono": "cpp",
+        "array": "cpp"
+    }
+}
