@@ -9,6 +9,7 @@ from .basket_detect import BasketDetector
 from cv_bridge import CvBridge
 import numpy as np
 from sensor_msgs.msg import Image
+import cv2
 
 class MainControllerNode(Node):
     def __init__(self):
@@ -52,7 +53,11 @@ class MainControllerNode(Node):
     def image_callback(self, msg):
         # Change ROS Image message to OpenCV format
         self.cv_image = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        self.get_logger().info('Image received.')
+        # Display the image using OpenCV
+        cv2.imshow("Camera Image", self.cv_image)
+        cv2.waitKey(1)
+        self.get_logger().info('Image received and displayed.')
+
 
     def request_action_callback(self, request, response):
         self.get_logger().info('Received action request: %d' % request.action)
