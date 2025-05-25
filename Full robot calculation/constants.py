@@ -13,7 +13,7 @@ ROBOT_HEIGHT = 1000  # Height of the robot's shooting mechanism
 BASKET_RADIUS = 450  # Radius of the basketball hoop
 MIN_ANGLE = 60  # Minimum launch angle in degrees
 MAX_VELOCITY = 15.0  # Maximum initial velocity in m/s
-X_OFFSET = 0.5  # X offset for the robot's position
+X_OFFSET = 0.2  # X offset for the robot's position
 
 # Colors for visualization
 COLORS = {
