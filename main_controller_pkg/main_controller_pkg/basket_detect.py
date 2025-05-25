@@ -1,15 +1,17 @@
-#!/usr/bin/env python3
+import os
 import cv2
 import numpy as np
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float32
 from ultralytics import YOLO
+from ament_index_python.packages import get_package_share_directory
 
+package_share = get_package_share_directory('main_controller_pkg')
 # Cấu hình cho việc phát hiện và xử lý bảng rổ
 CONFIG = {
     # Model
-    'model_path': 'v2.pt',
+    'model_path': os.path.join(package_share, 'models', 'v2.pt'),
     'confidence': 0.25,
     
     # Camera

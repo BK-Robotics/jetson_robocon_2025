@@ -5,38 +5,64 @@ from robot_interfaces.srv import Control
 from robot_interfaces.srv import RequestCalculation
 from robot_interfaces.srv import RotateBase
 from robot_interfaces.srv import RequestAction
+from .basket_detect import BasketDetector
+from cv_bridge import CvBridge
+import numpy as np
+from sensor_msgs.msg import Image
 
 class MainControllerNode(Node):
     def __init__(self):
         super().__init__('main_controller_node')
+
+        self.cv_image = None
         self.imu_angle = 0.0
         self.action = 0
         self.distance = 6.15
-        self.request_angle = 0.0
+        self.detected_angle = 0.0
         self.base_mode = 0
+
+        # Khởi tạo detector
+        self.detector = BasketDetector()
+        self.cv_bridge = CvBridge()
 
         self.action_srv = self.create_service(RequestAction, 'request_action', self.request_action_callback)
         self.control_client = self.create_client(Control, 'control')
         self.request_calculation_client = self.create_client(RequestCalculation, 'request_calculation')
         self.rotate_base_client = self.create_client(RotateBase, 'rotate_base')
+        
         self.imu_subscriber = self.create_subscription(
             IMU,
             'imu',
             self.imu_callback,
             10
         )
+        self.image_sub = self.create_subscription(
+            Image,
+            '/camera/color/image_raw',
+            self.image_callback,
+            10
+        )
+
         self.get_logger().info('Main controller node is ready.')
 
     def imu_callback(self, msg):
         self.imu_angle = msg.angle
         self.get_logger().info('IMU data received: %f' % self.imu_angle)
     
+    def image_callback(self, msg):
+        # Change ROS Image message to OpenCV format
+        self.cv_image = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+        self.get_logger().info('Image received.')
+
     def request_action_callback(self, request, response):
         self.get_logger().info('Received action request: %d' % request.action)
         success = False
         if request.action == 1:
             # Main rotate base and distance calculation
+            self.image_process_timer = self.create_timer(0.1, self.image_process_timer_callback)
             # self.distance = self.shooting_distance_process()
+            if self.detected_angle < 1:
+                self.image_process_timer.destroy()
             self.send_request_calculation(self.distance)
         elif request.action >= 5:
             self.base_mode = request.action - 5
@@ -90,9 +116,29 @@ class MainControllerNode(Node):
         else:
             self.get_logger().warn('No response from control service: %r' % future.exception())
 
-    def shooting_distance_process(self):
-        calculated_distance = 0.0
-        
+    def image_process_timer_callback(self):
+        calculated_distance = 6000.0
+        try:
+            # Xử lý frame để phát hiện bảng rổ
+            _ = self.detector.process_frame(self.cv_image)
+            
+            # Lấy góc phát hiện được từ detector
+            self.detected_angle = self.detector.get_last_angle()
+            
+            if self.detected_angle is not None:
+                # Tính tổng góc cần xoay (góc phát hiện + góc hiện tại của robot)
+                total_angle = self.detected_angle + self.imu_angle
+                
+                # Gửi request tới service /rotate_base với góc tổng
+                self.send_rotate_request(total_angle)
+                
+                # Log thông tin
+                self.get_logger().info(f'Góc phát hiện: {self.detected_angle:.2f}°, ' +
+                                     f'Góc IMU: {self.imu_angle:.2f}°, ' +
+                                     f'Tổng góc: {total_angle:.2f}°')
+                
+        except Exception as e:
+            self.get_logger().error(f'Lỗi xử lý ảnh: {str(e)}')
         return calculated_distance
     
 def main(args=None):
