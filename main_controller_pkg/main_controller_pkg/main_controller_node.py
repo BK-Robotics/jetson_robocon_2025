@@ -5,7 +5,8 @@ from robot_interfaces.srv import Control
 from robot_interfaces.srv import RequestCalculation
 from robot_interfaces.srv import RotateBase
 from robot_interfaces.srv import RequestAction
-from .basket_detect import BasketDetector
+from robot_interfaces.srv import RequestDistance
+from .include.basket_detect import BasketDetector
 from cv_bridge import CvBridge
 import numpy as np
 from sensor_msgs.msg import Image
@@ -30,7 +31,8 @@ class MainControllerNode(Node):
         self.control_client = self.create_client(Control, 'control')
         self.request_calculation_client = self.create_client(RequestCalculation, 'request_calculation')
         self.rotate_base_client = self.create_client(RotateBase, 'rotate_base')
-        
+        self.point_cloud_client = self.create_client(RequestDistance, '/request_point_cloud_calculation')
+
         self.imu_subscriber = self.create_subscription(
             IMU,
             'imu',
@@ -44,6 +46,12 @@ class MainControllerNode(Node):
             10
         )
 
+        self.process_image = self.create_publisher(
+            Image,
+            '/processed_image',
+            10
+        )
+
         self.get_logger().info('Main controller node is ready.')
 
     def imu_callback(self, msg):
@@ -53,6 +61,7 @@ class MainControllerNode(Node):
     def image_callback(self, msg):
         # Change ROS Image message to OpenCV format
         self.cv_image = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+        
         # Display the image using OpenCV
         cv2.imshow("Camera Image", self.cv_image)
         cv2.waitKey(1)
@@ -68,6 +77,7 @@ class MainControllerNode(Node):
             # self.distance = self.shooting_distance_process()
             if self.detected_angle < 1:
                 self.image_process_timer.destroy()
+            
             self.send_request_calculation(self.distance)
         elif request.action >= 5:
             self.base_mode = request.action - 5
@@ -80,6 +90,23 @@ class MainControllerNode(Node):
         # Set response fields appropriately.
         response.success = success  # or False based on your logic
         return response
+    
+    def send_request_point_cloud(self):
+        if not self.point_cloud_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().error('Point cloud service not available, exiting...')
+            return -1
+        
+        request = RequestDistance.Request()
+        request.wait_for_completion = 0
+
+        future = self.point_cloud_client.call_async(request)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=2)
+        if future.result() is not None:
+            self.get_logger().info('Point cloud request sent successfully.')
+            return future.result()
+        else:
+            self.get_logger().warn('No response from point cloud service: %r' % future.exception())
+            return -1
 
     def send_control_request(self, action, velocity = 0):
         if not self.control_client.wait_for_service(timeout_sec=1.0):
@@ -122,11 +149,12 @@ class MainControllerNode(Node):
             self.get_logger().warn('No response from control service: %r' % future.exception())
 
     def image_process_timer_callback(self):
-        calculated_distance = 6000.0
         try:
             # Xử lý frame để phát hiện bảng rổ
-            _ = self.detector.process_frame(self.cv_image)
-            
+            image = self.detector.process_frame(self.cv_image)
+            self.process_image.publish(image)
+            self.get_logger().info('Publish processed image.')
+
             # Lấy góc phát hiện được từ detector
             self.detected_angle = self.detector.get_last_angle()
             
@@ -138,13 +166,12 @@ class MainControllerNode(Node):
                 self.send_rotate_request(total_angle)
                 
                 # Log thông tin
-                self.get_logger().info(f'Góc phát hiện: {self.detected_angle:.2f}°, ' +
-                                     f'Góc IMU: {self.imu_angle:.2f}°, ' +
-                                     f'Tổng góc: {total_angle:.2f}°')
+                self.get_logger().info(f'Detedted angle: {self.detected_angle:.2f}°, ' +
+                                     f'IMU angle: {self.imu_angle:.2f}°, ' +
+                                     f'Sum angle: {total_angle:.2f}°')
                 
         except Exception as e:
-            self.get_logger().error(f'Lỗi xử lý ảnh: {str(e)}')
-        return calculated_distance
+            self.get_logger().error(f'Image process error: {str(e)}')
     
 def main(args=None):
     rclpy.init(args=args)

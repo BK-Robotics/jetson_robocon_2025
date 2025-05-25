@@ -7,11 +7,35 @@
   <maintainer email="thinh@todo.todo">thinh</maintainer>
   <license>TODO: License declaration</license>
 
+  <!-- ROS 2 core dependencies -->
   <depend>rclpy</depend>
-  <depend>robot_interfaces</depend>
   <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>ament_index_python</depend>
+
+  <!-- Custom interfaces -->
+  <depend>robot_interfaces</depend>
+  <depend>RequestCalculation</depend>
+
+  <!-- Image processing and vision -->
   <depend>cv_bridge</depend>
-  
+  <depend>opencv</depend>
+  <depend>sensor_msgs_py</depend>
+
+  <!-- Python libraries (for YOLO, numpy, etc.) -->
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
+  <exec_depend>python3-ultralytics</exec_depend>
+  <exec_depend>python3-matplotlib</exec_depend>
+  <exec_depend>python3-scipy</exec_depend>
+  <exec_depend>python3-pandas</exec_depend>
+  <exec_depend>python3-transforms3d</exec_depend>
+
+  <!-- Testing -->
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
