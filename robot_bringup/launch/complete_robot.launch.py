@@ -1,4 +1,7 @@
+import os
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
+from launch.actions import ExecuteProcess
 from launch_ros.actions import Node
 
 def generate_launch_description():
@@ -8,39 +11,15 @@ def generate_launch_description():
             executable='main_controller_node',
             name='main_controller_node',
             output='screen',
-            # parameters=[{'param_name': 'param_value'}],
-            # remappings=[('/old/topic', '/new/topic')]
         ),
         Node(
             package='main_controller_pkg',
             executable='full_calculation_node',
             name='full_calculation_node',
             output='screen',
-            # parameters=[{'param_name': 'param_value'}],
-            # remappings=[('/old/topic', '/new/topic')]
+        ),
+        ExecuteProcess(
+            cmd=['ros2', 'launch', 'astra_camera', 'astro_pro_plus.launch.xml'],
+            output='screen'
         )
-        # Node(
-        #     package='imu_pkg',
-        #     executable='imu_node',
-        #     name='imu_node',
-        #     output='screen'
-        # ),
-        # Node(
-        #     package='control_pkg',
-        #     executable='control_node',
-        #     name='control_node',
-        #     output='screen'
-        # ),
-        # Node(
-        #     package='request_calculation_pkg',
-        #     executable='request_calculation_node',
-        #     name='request_calculation_node',
-        #     output='screen'
-        # ),
-        # Node(
-        #     package='rotate_base_pkg',
-        #     executable='rotate_base_node',
-        #     name='rotate_base_node',
-        #     output='screen'
-        # )
     ])
