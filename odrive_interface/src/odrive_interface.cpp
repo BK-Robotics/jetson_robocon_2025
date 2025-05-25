@@ -18,11 +18,12 @@ static constexpr float BRACE_OFF_POS = 0.0f;
 static const vector<uint8_t> SHOOTER_MOTOR_IDS = {0, 1, 2};
 static const vector<uint8_t> DRIBBLE_MOTOR_IDS = {3, 4};
 static const uint8_t BRACE_MOTOR_ID = 5;
-static constexpr float DRIBBLE_FWD_SPEED = 10.0f;
-static constexpr float DRIBBLE_REV_SPEED = 6.0f;
+static constexpr float DRIBBLE_FWD_SPEED = 15.0f;
+static constexpr float DRIBBLE_REV_SPEED = 8.0f;
 static constexpr float DRIBBLE_STOP_SPEED = 0.0f;
-static constexpr auto DRIBBLE_FWD_DUR = 200ms;
-static constexpr auto DRIBBLE_REV_DUR = 2s;
+static constexpr auto DRIBBLE_FWD_DUR = 150ms;
+static constexpr auto DRIBBLE_REV_DUR = 800ms;
+static constexpr auto DRIBBLE_STAB_DUR = 1s;
 
 static constexpr float RELEASE_SPEED = 4.0f;
 static constexpr auto RELEASE_DUR = 800ms;
@@ -214,24 +215,32 @@ public:
     // Chạy trong thread riêng để callback /control không block
     thread([this]()
            {
-    // 1. Forward 200 ms
-      for (auto id : DRIBBLE_MOTOR_IDS)
-      motors_[id]->setTarget(DRIBBLE_FWD_SPEED * ((id % 2) ? 1.f : -1.f));
-      this_thread::sleep_for(DRIBBLE_FWD_DUR);
+        // 1. Forward 200 ms
+        for (auto id : DRIBBLE_MOTOR_IDS)
+            motors_[id]->setTarget(DRIBBLE_FWD_SPEED * ((id % 2) ? 1.f : -1.f));
+        this_thread::sleep_for(DRIBBLE_FWD_DUR);
 
-      // 2. Reverse 2 s
-      for (auto id : DRIBBLE_MOTOR_IDS)
-      motors_[id]->setTarget(DRIBBLE_REV_SPEED * ((id % 2) ? -1.f :  1.f));
-      this_thread::sleep_for(DRIBBLE_REV_DUR);
+        // 2. Reverse 2 s
+        for (auto id : DRIBBLE_MOTOR_IDS)
+            motors_[id]->setTarget(DRIBBLE_REV_SPEED * ((id % 2) ? -1.f : 1.f));
+        this_thread::sleep_for(DRIBBLE_REV_DUR);
 
-      // 3. Stop
-      for (auto id : DRIBBLE_MOTOR_IDS)
-      motors_[id]->setTarget(DRIBBLE_STOP_SPEED);
+        // // 3. Cho 1 motor quay ngược hướng (motor đầu tiên)
+        // float opposite_speed = - (2 * DRIBBLE_REV_SPEED * ((DRIBBLE_MOTOR_IDS[1] % 2) ? -1.f : 1.f));
+        // motors_[DRIBBLE_MOTOR_IDS[1]]->setTarget(opposite_speed);
 
-      RCLCPP_INFO(get_logger(), "Dribble sequence done"); })
+        // this_thread::sleep_for(DRIBBLE_STAB_DUR);
+
+        // // 4. Cuối cùng, dừng hết
+        // for (auto id : DRIBBLE_MOTOR_IDS)
+        //     motors_[id]->setTarget(DRIBBLE_STOP_SPEED);
+
+        for (auto id : DRIBBLE_MOTOR_IDS)
+          motors_[id]->setTarget(DRIBBLE_STOP_SPEED);
+
+        RCLCPP_INFO(get_logger(), "Dribble sequence done"); })
         .detach();
   }
-
   // ---------------------------------------------------------------
   void action_auto()
   {
