@@ -56,6 +56,7 @@ class StraightenPointCloudNode(Node):
         theta = self.rotation_angle
         cos_theta = math.cos(theta)
         sin_theta = math.sin(theta)
+        
         # Rotation matrix about X-axis (Roll)
         R_x = np.array([[1,     0,           0    ],
                       [0,  cos_theta,  sin_theta],

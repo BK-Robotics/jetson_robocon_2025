@@ -148,7 +148,6 @@ class PlaneDetectionNode(Node):
             import traceback
             self.get_logger().error(traceback.format_exc())
 
-
     def broadcast_transform(self, transform_data):
         """Broadcast transform from camera to plane centroid with a modifiable rotation matrix."""
         t = TransformStamped()
