@@ -34,7 +34,7 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
     { // Cross: Fire
         out.request_action = 1;
         out.has_request_action = true;
-    }
+    } 
     if (edge(2))
     { // Triangle: Brace
         out.request_action = 2;
