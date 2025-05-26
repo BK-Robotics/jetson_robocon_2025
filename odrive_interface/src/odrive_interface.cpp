@@ -21,10 +21,11 @@ static const uint8_t BRACE_MOTOR_ID = 5;
 static constexpr float DRIBBLE_FWD_SPEED = 15.0f;
 static constexpr float DRIBBLE_REV_SPEED = 8.0f;
 static constexpr float DRIBBLE_STOP_SPEED = 0.0f;
+static constexpr float RELOAD_SPEED = 5.0f;
+static constexpr float FIRE_MANUAL_SPEED = 50.0f;
 static constexpr auto DRIBBLE_FWD_DUR = 150ms;
-static constexpr auto DRIBBLE_REV_DUR = 800ms;
-static constexpr auto DRIBBLE_STAB_DUR = 1s;
-
+static constexpr auto DRIBBLE_REV_DUR = 500ms;
+static constexpr auto DRIBBLE_STAB_DUR = 500ms;
 static constexpr float RELEASE_SPEED = 4.0f;
 static constexpr auto RELEASE_DUR = 800ms;
 
@@ -32,7 +33,7 @@ class OdriveInterfaceNode : public rclcpp::Node
 {
 public:
   OdriveInterfaceNode()
-      : Node("odrive_interface"), brace_on_(false)
+      : Node("odrive_interface"), brace_on_(false), is_reload_(false)
   {
     // --- CAN và các OdriveMotor ---
     can_iface_ = std::make_unique<CANInterface>();
@@ -111,6 +112,12 @@ public:
     case 4:
       clear_errors();
       break;
+    case 5:
+      reload();
+      break;
+    case 6:
+      fire_manual();
+      break;
     default:
       RCLCPP_WARN(get_logger(), "Unknown action %u", req->action);
       res->success = false;
@@ -128,6 +135,7 @@ public:
       motors_[id]->setTarget(0.0f);
     RCLCPP_INFO(get_logger(), "Reset done");
     brace_on_ = false;
+    is_reload_ = false;
   }
 
   void idle()
@@ -167,9 +175,10 @@ public:
       auto req  = std::make_shared<PushBall::Request>();
       req->wait_for_completion = true;
 
-      if (!push_ball_client_->wait_for_service(1s)) {
-      RCLCPP_ERROR(get_logger(), "/push_ball service unavailable");
-      return;
+      if (!push_ball_client_->wait_for_service(1s)) 
+      {
+        RCLCPP_ERROR(get_logger(), "/push_ball service unavailable");
+        return;
       }
       push_ball_client_->async_send_request(req);
       RCLCPP_INFO(get_logger(), "Called /push_ball (async)"); })
@@ -247,7 +256,8 @@ public:
     thread([this]()
            {
     /**************** 1. BRACE ON nếu chưa ****************/
-    if (!brace_on_) {
+    if (!brace_on_) 
+    {
       motors_[BRACE_MOTOR_ID]->setTarget(BRACE_ON_POS);
       brace_on_ = true;                       // cập nhật cờ
       RCLCPP_INFO(get_logger(), "Auto: brace ON");
@@ -255,15 +265,29 @@ public:
     }
 
     /**************** 2. DRIBBLE (nhồi 2 s) ****************/
-    // forward 0,2 s
+    // forward 
     for (auto id : DRIBBLE_MOTOR_IDS)
       motors_[id]->setTarget(DRIBBLE_FWD_SPEED * ((id % 2) ? 1.f : -1.f));
     this_thread::sleep_for(DRIBBLE_FWD_DUR);
 
-    // reverse 2 s
+    // reverse 
     for (auto id : DRIBBLE_MOTOR_IDS)
       motors_[id]->setTarget(DRIBBLE_REV_SPEED * ((id % 2) ? -1.f : 1.f));
-    this_thread::sleep_for(DRIBBLE_REV_DUR);        // tổng ≈ 2 s
+    this_thread::sleep_for(DRIBBLE_REV_DUR);
+
+
+    for (auto id : DRIBBLE_MOTOR_IDS)
+      motors_[id]->setTarget(DRIBBLE_STOP_SPEED);
+    
+    for (auto id : DRIBBLE_MOTOR_IDS)
+      motors_[id]->idle();
+    this_thread::sleep_for(DRIBBLE_STAB_DUR);
+
+    for (auto id : DRIBBLE_MOTOR_IDS)
+      motors_[id]->clearError();
+    
+    for (auto id : DRIBBLE_MOTOR_IDS)
+      motors_[id]->closeLoopControl();
 
     /**************** 3. BRACE OFF ****************/
     motors_[BRACE_MOTOR_ID]->setTarget(BRACE_OFF_POS);
@@ -278,7 +302,8 @@ public:
     while (true) {
       float pos = motors_[BRACE_MOTOR_ID]->getPosition();  
       if (abs(pos - BRACE_OFF_POS) < POS_EPS) break;
-      if (chrono::steady_clock::now() - start > TIMEOUT) {
+      if (chrono::steady_clock::now() - start > TIMEOUT) 
+      {
         RCLCPP_ERROR(get_logger(), "Auto: brace never reached 0 !");
         return;   // hủy quy trình
       }
@@ -297,6 +322,48 @@ public:
         .detach();
   }
 
+  void reload()
+  {
+    if (!is_reload_)
+    {
+      for (auto id : DRIBBLE_MOTOR_IDS)
+        motors_[id]->setTarget(RELOAD_SPEED * ((id % 2) ? -1.f : 1.f));
+      RCLCPP_INFO(get_logger(), "Reloading...");
+      is_reload_ = true;
+    }
+    else
+    {
+      for (auto id : DRIBBLE_MOTOR_IDS)
+        motors_[id]->setTarget(DRIBBLE_STOP_SPEED);
+      RCLCPP_INFO(get_logger(), "Reload stopped");
+      is_reload_ = false;
+    }
+  }
+
+  void fire_manual()
+  {
+    // 1) bắn 0-1-2 ở chế độ velocity
+    for (auto id : SHOOTER_MOTOR_IDS)
+      motors_[id]->setTarget(FIRE_MANUAL_SPEED);
+    RCLCPP_INFO(get_logger(), "Shooter speed set to %.1f", FIRE_MANUAL_SPEED);
+
+    // 2) sau 0.5 s gọi /push_ball – không block
+    thread([this]()
+           {
+      this_thread::sleep_for(500ms);
+
+      auto req  = std::make_shared<PushBall::Request>();
+      req->wait_for_completion = true;
+
+      if (!push_ball_client_->wait_for_service(1s)) 
+      {
+        RCLCPP_ERROR(get_logger(), "/push_ball service unavailable");
+        return;
+      }
+      push_ball_client_->async_send_request(req);
+      RCLCPP_INFO(get_logger(), "Called /push_ball (async)"); })
+        .detach();
+  }
   // ────────────────────────────────────────────────────────────────
   // Private data
   // ────────────────────────────────────────────────────────────────
@@ -307,6 +374,7 @@ private:
   rclcpp::Service<OdriveSrv>::SharedPtr odrive_srv_;
   rclcpp::Client<PushBall>::SharedPtr push_ball_client_;
   bool brace_on_;
+  bool is_reload_;
 };
 
 // ────────────────────────────────────────────────────────────────

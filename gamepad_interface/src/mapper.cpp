@@ -34,7 +34,7 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
     { // Cross: Fire
         out.request_action = 1;
         out.has_request_action = true;
-    } 
+    }
     if (edge(2))
     { // Triangle: Brace
         out.request_action = 2;
@@ -49,6 +49,11 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
     { // Circle: Auto
         out.request_action = 4;
         out.has_request_action = true;
+    }
+    if (edge(11))
+    { // L3: Reload
+        out.request_odrive = 5;
+        out.has_request_odrive = true;
     }
 
     if (edge(4))
@@ -90,10 +95,16 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
     /*---------------- MANUAL vs SEMI-AUTO ----------------*/
     if (!semi_auto_)
     { /************  MANUAL  ************/
+        if (edge(13))
+        { // Touch-pad: Fire (manual)
+            out.request_odrive = 6;
+            out.has_request_odrive = true;
+        }
+
         BaseCmd cmd;
 
         /* velocity : L2 (-) + R2 (+) */
-        constexpr float SAFEZONE = 0.05f;
+        constexpr float SAFEZONE = 0.1f;
 
         float t_neg = s.axes[4]; // L2
         float t_pos = s.axes[5]; // R2
@@ -102,8 +113,8 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
             t_neg = 0.0f;
         if (t_pos < SAFEZONE)
             t_pos = 0.0f;
-            
-        float raw = t_pos - t_neg; 
+
+        float raw = t_pos - t_neg;
         if (fabs(raw) < SAFEZONE)
         {
             raw = 0.0f;
