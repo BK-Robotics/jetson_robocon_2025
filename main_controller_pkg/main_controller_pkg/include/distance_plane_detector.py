@@ -5,7 +5,8 @@ from visualization_msgs.msg import Marker, MarkerArray
 from transforms3d.euler import euler2quat
 
 class PlaneDetector:
-    def __init__(self, distance_threshold=0.05, max_iterations=300, min_points=50, min_z=0.3, max_z=8.0):
+
+    def __init__(self, distance_threshold=0.05, max_iterations=300, min_points=50, min_z=0.3, max_z=5.25):
         # Các tham số RANSAC
         self.distance_threshold = distance_threshold
         self.max_iterations = max_iterations
