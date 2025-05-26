@@ -44,7 +44,7 @@ class StraightenPointCloudNode(Node):
         self.publisher_ = self.create_publisher(PointCloud2, 'straight_point_cloud', 10)
         self.get_logger().info("Straighten Point Cloud Node started")
         # Set the rotation angle (in radians) used to "straighten" the cloud.
-        self.camera_angle = 30
+        self.camera_angle = 25
         self.rotation_angle = (-self.camera_angle + 70) * math.pi / 180.0  # Adjust as needed.
 
     def pointcloud_callback(self, msg):

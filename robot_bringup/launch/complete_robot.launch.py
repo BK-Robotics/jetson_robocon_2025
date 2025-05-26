@@ -18,8 +18,25 @@ def generate_launch_description():
             name='full_calculation_node',
             output='screen',
         ),
+        Node(
+            package='main_controller_pkg',
+            executable='tf_publish_node',
+            name='tf_publish_node',
+            output='screen',
+        ),
+        Node(
+            package='main_controller_pkg',
+            executable='plane_calculation_node',
+            name='plane_calculation_node',
+            output='screen',
+        ),
         ExecuteProcess(
             cmd=['ros2', 'launch', 'astra_camera', 'astro_pro_plus.launch.xml'],
-            output='screen'
+            output='screen',
         )
+
+        # ExecuteProcess(
+        #     cmd=['rviz2', '-d', '/home/bkrobotics/jetson_robocon_2025/jetson_robocon_2025/robot_bringup/rviz/point_cloud.rviz'],
+        #     output='screen'
+        # )
     ])
