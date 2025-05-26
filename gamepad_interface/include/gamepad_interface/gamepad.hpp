@@ -7,7 +7,7 @@
 struct GamepadState
 {
     std::array<float, 8> axes; 
-    std::array<uint8_t, 13> buttons; 
+    std::array<uint8_t, 14> buttons; 
 };
 
 class DualSenseDriver

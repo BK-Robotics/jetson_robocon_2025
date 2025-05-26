@@ -19,6 +19,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/RotateBase.srv"
   "srv/PushBall.srv"
   "srv/RequestMcu.srv"
+  "srv/RequestDistance.srv"
 )
 
 ament_export_dependencies(rosidl_default_runtime)

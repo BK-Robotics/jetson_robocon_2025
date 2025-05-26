@@ -6,20 +6,10 @@
         "limitSymbolsToIncludedHeaders": false
       },
       "includePath": [
-        "/home/ddon/robocon2025_ws/install/odrive_interface/include/**",
-        "/home/ddon/robocon2025_ws/install/gamepad_interface/include/**",
-        "/home/ddon/robocon2025_ws/install/robot_interfaces/include/**",
-        "/home/ddon/robocon2025_ws/install/astra_camera_msgs/include/**",
-        "/home/ddon/ros2_ws_cpp/install/shooter_control/include/**",
-        "/home/ddon/ros2_ws_cpp/install/robot_interfaces/include/**",
-        "/home/ddon/ros2_ws_cpp/install/odrive_custom_msg/include/**",
-        "/home/ddon/ros2_ws_cpp/install/mecanum_drivetrain/include/**",
-        "/home/ddon/ros2_ws_cpp/install/astra_camera_msgs/include/**",
-        "/opt/ros/humble/include/**",
-        "/home/ddon/robocon2025_ws/src/gamepad_interface/include/**",
-        "/home/ddon/robocon2025_ws/src/mcu_interface/include/**",
-        "/home/ddon/robocon2025_ws/src/odrive_interface/include/**",
-        "/home/ddon/robocon2025_ws/src/ros2_astra_camera/astra_camera/include/**",
+        "${workspaceFolder}/install/**",
+        "${workspaceFolder}/src/**",
+
+        "/opt/ros/${env:ROS_DISTRO}/include/**",
         "/usr/include/**"
       ],
       "name": "ROS",
