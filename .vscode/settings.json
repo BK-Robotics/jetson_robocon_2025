@@ -26,6 +26,12 @@
     "files.associations": {
         "*.c": "c",
         "chrono": "cpp",
-        "array": "cpp"
-    }
+        "array": "cpp",
+        "system_error": "cpp",
+        "functional": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp"
+    },
+    "cmake.sourceDirectory": "/home/bkrobotics/jetson_robocon_2025/jetson_robocon_2025/gamepad_interface"
 }

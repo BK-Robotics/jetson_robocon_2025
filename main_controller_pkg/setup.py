@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 from glob import glob
 
 package_name = 'main_controller_pkg'
@@ -6,7 +6,7 @@ package_name = 'main_controller_pkg'
 setup(
     name=package_name,
     version='0.0.0',
-    packages=[package_name],
+    packages=find_packages(include=['main_controller_pkg', 'main_controller_pkg.*']),
     data_files=[
         ('share/' + package_name + '/models', glob('models/*')),
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
@@ -21,7 +21,10 @@ setup(
     entry_points={
         'console_scripts': [
             'main_controller_node = main_controller_pkg.main_controller_node:main',
-            'full_calculation_node = main_controller_pkg.full_calculation_node:main'
+            'full_calculation_node = main_controller_pkg.full_calculation_node:main',
+            'capture_image_node = main_controller_pkg.capture_image_node:main',
+            'plane_calculation_node = main_controller_pkg.plane_calculation_node:main',
+            'tf_publish_node = main_controller_pkg.tf_publish_node:main'
         ],
     },
 )

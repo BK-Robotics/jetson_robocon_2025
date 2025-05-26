@@ -197,7 +197,7 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
             dpad_locked_ = false;
         }
 
-        if (edge(12))
+        if (edge(13))
         { // Touch-Pad click
             out.request_mcu = 10;
             out.has_request_mcu = true;

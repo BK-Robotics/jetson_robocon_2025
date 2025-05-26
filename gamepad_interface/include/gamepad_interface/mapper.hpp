@@ -40,7 +40,7 @@ private:
     bool dpad_locked_{false}; // “first-press” handling
     int8_t last_dpad_x_{0};
     int8_t last_dpad_y_{0};
-    std::array<uint8_t, 13> last_btn_{{0}};
+    std::array<uint8_t, 14> last_btn_{{0}};
 
     float prev_raw_angle_{0.0f};
     float cumulative_angle_{0.0f};

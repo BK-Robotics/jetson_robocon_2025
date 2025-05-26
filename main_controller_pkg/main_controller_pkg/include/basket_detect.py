@@ -6,8 +6,11 @@ from rclpy.node import Node
 from std_msgs.msg import Float32
 from ultralytics import YOLO
 from ament_index_python.packages import get_package_share_directory
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
 
 package_share = get_package_share_directory('main_controller_pkg')
+
 # Cấu hình cho việc phát hiện và xử lý bảng rổ
 CONFIG = {
     # Model
@@ -102,6 +105,7 @@ class BasketDetector:
         self.last_centroid_x = None
         self.last_centroid_y = None
         self.last_angle = None
+        self.cv_bridge = CvBridge()
     
     def get_last_centroid_x(self):
         """Trả về tọa độ x của centroid cuối cùng"""
@@ -208,5 +212,5 @@ class BasketDetector:
                 cv2.putText(annotated_frame, "Hoop Top",
                           (top_center_x + 10, top_center_y), CONFIG['font'], CONFIG['font_scale'],
                           CONFIG['colors']['hoop'], CONFIG['font_thickness'])
-        
-        return annotated_frame 
+        image = self.cv_bridge.cv2_to_imgmsg(annotated_frame, encoding='bgr8')
+        return image 
