@@ -21,6 +21,7 @@ static const uint8_t BRACE_MOTOR_ID = 5;
 static constexpr float DRIBBLE_FWD_SPEED = 15.0f;
 static constexpr float DRIBBLE_REV_SPEED = 8.0f;
 static constexpr float DRIBBLE_STOP_SPEED = 0.0f;
+static constexpr float SHOOT_SPEED = 0.0f;
 static constexpr auto DRIBBLE_FWD_DUR = 150ms;
 static constexpr auto DRIBBLE_REV_DUR = 800ms;
 static constexpr auto DRIBBLE_STAB_DUR = 1s;
@@ -51,12 +52,6 @@ public:
           std::make_unique<OdriveMotor>(id, mode, can_iface_.get()));
     }
 
-    // --- Service Server /control ---
-    control_srv_ = create_service<ControlSrv>(
-        "control",
-        bind(&OdriveInterfaceNode::on_control, this,
-             placeholders::_1, placeholders::_2));
-
     // --- Service Server /request_odrive ---
     odrive_srv_ = create_service<OdriveSrv>(
         "request_odrive",
@@ -67,31 +62,6 @@ public:
     push_ball_client_ = create_client<PushBall>("push_ball");
 
     RCLCPP_INFO(get_logger(), "odrive_interface ready.");
-  }
-
-  void on_control(const shared_ptr<ControlSrv::Request> req,
-                  shared_ptr<ControlSrv::Response> res)
-  {
-    switch (req->action)
-    {
-    case 1:
-      action_push_ball(req->velocity);
-      break;
-    case 2:
-      action_toggle_brace();
-      break;
-    case 3:
-      action_dribble();
-      break;
-    case 4:
-      action_auto();
-      break;
-    default:
-      RCLCPP_WARN(get_logger(), "Unknown action %u", req->action);
-      res->success = false;
-      return;
-    }
-    res->success = true; // nếu tới được đây coi như OK
   }
 
   void on_odrive_request(const shared_ptr<OdriveSrv::Request> req,
@@ -105,6 +75,8 @@ public:
     case 1:
       closed_loop_control();
       break;
+    case 2:
+      shoot();
     case 3:
       reset_motors();
       break;
@@ -152,12 +124,12 @@ public:
   }
 
   // ---------------------------------------------------------------
-  void action_push_ball(uint8_t vel)
+  void shoot()
   {
     // 1) bắn 0-1-2 ở chế độ velocity
     for (auto id : SHOOTER_MOTOR_IDS)
-      motors_[id]->setTarget(static_cast<float>(vel));
-    RCLCPP_INFO(get_logger(), "Shooter speed set to %.1f", vel);
+      motors_[id]->setTarget(SHOOT_SPEED);
+    RCLCPP_INFO(get_logger(), "Shooter speed set to %.1f", SHOOT_SPEED);
 
     // 2) sau 0.5 s gọi /push_ball – không block
     thread([this]()
@@ -173,127 +145,6 @@ public:
       }
       push_ball_client_->async_send_request(req);
       RCLCPP_INFO(get_logger(), "Called /push_ball (async)"); })
-        .detach();
-  }
-
-  // ---------------------------------------------------------------
-  void action_toggle_brace()
-  {
-    float target = (brace_on_ ? BRACE_OFF_POS : BRACE_ON_POS);
-    motors_[BRACE_MOTOR_ID]->setTarget(target);
-    brace_on_ = !brace_on_;
-    RCLCPP_INFO(get_logger(), "Brace %s (pos=%.1f)",
-                brace_on_ ? "ON" : "OFF", target);
-  }
-
-  // ---------------------------------------------------------------
-  void action_release()
-  {
-    thread([this]()
-           {
-    for (auto id : DRIBBLE_MOTOR_IDS)
-      motors_[id]->setTarget(RELEASE_SPEED * ((id % 2) ? 1.f : -1.f));
-
-    this_thread::sleep_for(RELEASE_DUR);
-
-    // Stop dribble motors
-    for (auto id : DRIBBLE_MOTOR_IDS)
-      motors_[id]->setTarget(DRIBBLE_STOP_SPEED);
-
-    RCLCPP_INFO(get_logger(), "Release sequence done"); })
-        .detach();
-  }
-
-  // ---------------------------------------------------------------
-  void action_dribble()
-  {
-    if (!brace_on_)
-    {
-      action_release();
-      return;
-    }
-    // Chạy trong thread riêng để callback /control không block
-    thread([this]()
-           {
-        // 1. Forward 200 ms
-        for (auto id : DRIBBLE_MOTOR_IDS)
-            motors_[id]->setTarget(DRIBBLE_FWD_SPEED * ((id % 2) ? 1.f : -1.f));
-        this_thread::sleep_for(DRIBBLE_FWD_DUR);
-
-        // 2. Reverse 2 s
-        for (auto id : DRIBBLE_MOTOR_IDS)
-            motors_[id]->setTarget(DRIBBLE_REV_SPEED * ((id % 2) ? -1.f : 1.f));
-        this_thread::sleep_for(DRIBBLE_REV_DUR);
-
-        // // 3. Cho 1 motor quay ngược hướng (motor đầu tiên)
-        // float opposite_speed = - (2 * DRIBBLE_REV_SPEED * ((DRIBBLE_MOTOR_IDS[1] % 2) ? -1.f : 1.f));
-        // motors_[DRIBBLE_MOTOR_IDS[1]]->setTarget(opposite_speed);
-
-        // this_thread::sleep_for(DRIBBLE_STAB_DUR);
-
-        // // 4. Cuối cùng, dừng hết
-        // for (auto id : DRIBBLE_MOTOR_IDS)
-        //     motors_[id]->setTarget(DRIBBLE_STOP_SPEED);
-
-        for (auto id : DRIBBLE_MOTOR_IDS)
-          motors_[id]->setTarget(DRIBBLE_STOP_SPEED);
-
-        RCLCPP_INFO(get_logger(), "Dribble sequence done"); })
-        .detach();
-  }
-  // ---------------------------------------------------------------
-  void action_auto()
-  {
-    thread([this]()
-           {
-    /**************** 1. BRACE ON nếu chưa ****************/
-    if (!brace_on_) {
-      motors_[BRACE_MOTOR_ID]->setTarget(BRACE_ON_POS);
-      brace_on_ = true;                       // cập nhật cờ
-      RCLCPP_INFO(get_logger(), "Auto: brace ON");
-      this_thread::sleep_for(200ms);     // cho cơ cấu ổn định một chút
-    }
-
-    /**************** 2. DRIBBLE (nhồi 2 s) ****************/
-    // forward 0,2 s
-    for (auto id : DRIBBLE_MOTOR_IDS)
-      motors_[id]->setTarget(DRIBBLE_FWD_SPEED * ((id % 2) ? 1.f : -1.f));
-    this_thread::sleep_for(DRIBBLE_FWD_DUR);
-
-    // reverse 2 s
-    for (auto id : DRIBBLE_MOTOR_IDS)
-      motors_[id]->setTarget(DRIBBLE_REV_SPEED * ((id % 2) ? -1.f : 1.f));
-    this_thread::sleep_for(DRIBBLE_REV_DUR);        // tổng ≈ 2 s
-
-    /**************** 3. BRACE OFF ****************/
-    motors_[BRACE_MOTOR_ID]->setTarget(BRACE_OFF_POS);
-    brace_on_ = false;
-    RCLCPP_INFO(get_logger(), "Auto: brace OFF");
-
-    /**************** 4. Đợi feedback vị trí = 0 ****************/
-    constexpr float POS_EPS = 0.1f;                  // dung sai
-    const auto      TIMEOUT = 5s;                    // tránh kẹt
-    auto            start   = chrono::steady_clock::now();
-
-    while (true) {
-      float pos = motors_[BRACE_MOTOR_ID]->getPosition();  
-      if (abs(pos - BRACE_OFF_POS) < POS_EPS) break;
-      if (chrono::steady_clock::now() - start > TIMEOUT) {
-        RCLCPP_ERROR(get_logger(), "Auto: brace never reached 0 !");
-        return;   // hủy quy trình
-      }
-      this_thread::sleep_for(50ms);
-    }
-
-    /**************** 5. RELEASE (speed = 4 trong 0,4 s) ****************/
-    RCLCPP_INFO(get_logger(), "Auto: release");
-    for (auto id : DRIBBLE_MOTOR_IDS)
-      motors_[id]->setTarget(RELEASE_SPEED * ((id % 2) ? 1.f : -1.f));
-    this_thread::sleep_for(RELEASE_DUR);
-    for (auto id : DRIBBLE_MOTOR_IDS)
-      motors_[id]->setTarget(DRIBBLE_STOP_SPEED);
-
-    RCLCPP_INFO(get_logger(), "Auto: sequence DONE"); })
         .detach();
   }
 

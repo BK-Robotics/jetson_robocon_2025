@@ -21,34 +21,11 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
         return rising;
     };
 
-    if (edge(10))
-    { // PS = BTN_MODE
+    if (edge(9))
+    { // Mode
         semi_auto_ = !semi_auto_;
         out.request_mcu = 5;
         out.has_request_mcu = true;
-        out.request_action = 5 + static_cast<int>(semi_auto_);
-        out.has_request_action = true;
-    }
-
-    if (edge(0))
-    { // Cross: Fire
-        out.request_action = 1;
-        out.has_request_action = true;
-    } 
-    if (edge(2))
-    { // Triangle: Brace
-        out.request_action = 2;
-        out.has_request_action = true;
-    }
-    if (edge(3))
-    { // Square: Dribble
-        out.request_action = 3;
-        out.has_request_action = true;
-    }
-    if (edge(1))
-    { // Circle: Auto
-        out.request_action = 4;
-        out.has_request_action = true;
     }
 
     if (edge(4))
@@ -57,8 +34,6 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
         out.has_request_mcu = true;
         out.request_odrive = 0;
         out.has_request_odrive = true;
-        out.request_action = 7;
-        out.has_request_action = true;
     }
     if (edge(5))
     { // R1: Closed Loop
@@ -72,19 +47,36 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
         out.request_mcu = 2;
         out.has_request_mcu = true;
     }
-    if (edge(8))
-    { // CREATE: Reset
+    if (edge(11))
+    { // L3: Reset
         out.request_mcu = 3;
         out.has_request_mcu = true;
         out.request_odrive = 3;
         out.has_request_odrive = true;
     }
-    if (edge(9))
-    { // OPTIONS: ClearError
+    if (edge(0))
+    { // CROSS: ClearError
         out.request_mcu = 4;
         out.has_request_mcu = true;
         out.request_odrive = 4;
         out.has_request_odrive = true;
+    }
+    if (edge(11))
+    { // L3: Toggle Reload
+        out.request_odrive = 5;
+        out.has_request_odrive = true;
+    }
+
+    /*---------------- UPPER STRUCTURE ----------------*/
+    if (edge(2))
+    { // TRIANGLE: Fire
+        out.request_odrive = 2;
+        out.has_request_odrive = true;
+    }
+    if (edge(1))
+    { // CIRCLE: Open net
+        out.request_mcu = 11;
+        out.has_request_mcu = true;
     }
 
     /*---------------- MANUAL vs SEMI-AUTO ----------------*/
@@ -93,7 +85,7 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
         BaseCmd cmd;
 
         /* velocity : L2 (-) + R2 (+) */
-        constexpr float SAFEZONE = 0.05f;
+        constexpr float SAFEZONE = 0.1f;
 
         float t_neg = s.axes[4]; // L2
         float t_pos = s.axes[5]; // R2
