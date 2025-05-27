@@ -33,5 +33,5 @@
         "type_traits": "cpp",
         "utility": "cpp"
     },
-    "cmake.sourceDirectory": "/home/bkrobotics/jetson_robocon_2025/jetson_robocon_2025/gamepad_interface"
+    "cmake.sourceDirectory": "/home/ddon/robocon2025_ws/src/gamepad_interface"
 }
