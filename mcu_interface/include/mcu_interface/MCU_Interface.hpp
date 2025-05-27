@@ -32,6 +32,7 @@
 #define FRAME_TURN_LEFT       {0x99, 0x02, 0x11, 0xAF, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 #define FRAME_TURN_RIGHT      {0x99, 0x02, 0x11, 0xB0, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 #define FRAME_180_ROTATE      {0x99, 0x02, 0x11, 0xB1, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+#define FRAME_OPEN_NET        {0x99, 0x02, 0x00, 0xA9, 0x0E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 
 /**
  * @brief UARTNode giao tiếp UART với vi điều khiển qua USB-TTL, nhận và gửi dữ liệu định dạng 12 byte.
@@ -82,11 +83,13 @@ private:
     // ==== ROS2 ====
     rclcpp::Publisher<robot_interfaces::msg::IMU>::SharedPtr pub_imu_;
     rclcpp::Service<robot_interfaces::srv::RotateBase>::SharedPtr service_rotate_;
-    rclcpp::Service<robot_interfaces::srv::RequestMcu>::SharedPtr service_request_mcu_;
+    rclcpp::Service<robot_interfaces::srv::RsequestMcu>::SharedPtr service_request_mcu_;
     rclcpp::Service<robot_interfaces::srv::PushBall>::SharedPtr service_push_ball_;
     rclcpp::Subscription<robot_interfaces::msg::BaseCmd>::SharedPtr sub_base_cmd_;
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::TimerBase::SharedPtr uart_tx_timer_;
+    std::atomic<std::chrono::steady_clock::time_point> last_uart_rx_time_;
+    std::atomic<std::chrono::steady_clock::time_point> current_uart_rx_time_;
     std::thread uart_read_thread_;
 
 };

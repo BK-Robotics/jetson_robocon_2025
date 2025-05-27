@@ -44,6 +44,8 @@ UARTNode::UARTNode() : Node("uart_node") {
 
     send_initialization_commands();
 
+    current_uart_rx_time_ = last_uart_rx_time_ = std::chrono::steady_clock::now();
+
     RCLCPP_INFO(this->get_logger(), "UART MCU node started.");
 }
 
@@ -173,10 +175,8 @@ void UARTNode::process_uart_queue() {
 
 void UARTNode::send_initialization_commands() {
     std::vector<std::vector<uint8_t>> init_cmds = {
-        {0x99, 0x01, 0x05, 0x71, 0x64, 0x00, 0x64, 0x00, 0x0A, 0x00, 0x00, 0x00},
-        {0x99, 0x01, 0x00, 0x9B, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-        {0x99, 0x01, 0x00, 0x9A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-        {0x99, 0x01, 0x02, 0x9D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+        {0x99, 0x01, 0x05, 0xA9, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+        
     };
     for (auto& frame : init_cmds){
         Suart_queue_.push(frame);
@@ -236,7 +236,7 @@ void UARTNode::handle_request_mcu_service(
         case 8: frames.push_back(FRAME_GO_STRAIGHT); break; // set up lai chu trinh 3
         case 9: frames.push_back(FRAME_TURN_LEFT); break; // set up lai chu trinh 4
         case 10: frames.push_back(FRAME_EMERGENCY_STOP); break;
-
+        case 11: frames.push_back(FRAME_OPEN_NET); break; 
         default:
             RCLCPP_WARN(this->get_logger(), "Unknown base_control cmd: %d", cmd);
             response->success = false;
@@ -273,6 +273,17 @@ float UARTNode::convert_to_angle(uint8_t low, uint8_t high) {
 
 void UARTNode::uart_read_loop() {
     while (rclcpp::ok()) {
+        current_uart_rx_time_ = std::chrono::steady_clock::now();
+        auto duration = duration_cast<milliseconds>(current_uart_rx_time_ - last_uart_rx_time_);
+        if (duration.count() >= 1000) {
+            RCLCPP_WARN(this->get_logger(), "No UART data received in 1s. Sending init frame again.");
+            std::vector<uint8_t> frame = {0x99, 0x01, 0x05, 0xA9, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+            {
+                std::lock_guard<std::mutex> lock(uart_queue_mutex_);
+                Suart_queue_.push(frame);  
+            }
+            last_uart_rx_time_ = current_uart_rx_time_;
+        }
         uint8_t byte;
         int n = read(uart_fd_, &byte, 1);
         if (n <= 0) {
@@ -324,6 +335,7 @@ void UARTNode::uart_read_loop() {
                     robot_interfaces::msg::IMU msg;
                     msg.angle = z;
                     pub_imu_->publish(msg);
+                    last_uart_rx_time_ = std::chrono::steady_clock::now();
                 }
             }
         }
