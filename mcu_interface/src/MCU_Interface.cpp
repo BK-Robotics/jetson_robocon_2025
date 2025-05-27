@@ -10,7 +10,7 @@ UARTNode::UARTNode() : Node("uart_node") {
 
     this->mode_state = 1;
 
-    configure_port(uart_fd_, B115200);
+    configure_port(uart_fd_, B115200); 
 
     pub_imu_ = this->create_publisher<robot_interfaces::msg::IMU>("/imu", 10);
 
@@ -173,10 +173,7 @@ void UARTNode::process_uart_queue() {
 
 void UARTNode::send_initialization_commands() {
     std::vector<std::vector<uint8_t>> init_cmds = {
-        {0x99, 0x01, 0x05, 0x71, 0x64, 0x00, 0x64, 0x00, 0x0A, 0x00, 0x00, 0x00},
-        {0x99, 0x01, 0x00, 0x9B, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-        {0x99, 0x01, 0x00, 0x9A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-        {0x99, 0x01, 0x02, 0x9D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+        {0x99, 0x01, 0x05, 0x71, 0x64, 0x00, 0x64, 0x00, 0x0A, 0x00, 0x00, 0x00}
     };
     for (auto& frame : init_cmds){
         Suart_queue_.push(frame);
@@ -231,10 +228,10 @@ void UARTNode::handle_request_mcu_service(
             this->mode_state = (this->mode_state + 1) % 2;
             break;
         }
-        case 6: frames.push_back(FRAME_AUTO_IDLE); break; // set up lai chu trinh 1
-        case 7: frames.push_back(FRAME_GO_BACK); break; // set up lai chu trinh 2
+        case 6: frames.push_back(FRAME_GO_BACK); break; // set up lai chu trinh 1
+        case 7: frames.push_back(FRAME_180_ROTATE); break; // set up lai chu trinh 
         case 8: frames.push_back(FRAME_GO_STRAIGHT); break; // set up lai chu trinh 3
-        case 9: frames.push_back(FRAME_TURN_LEFT); break; // set up lai chu trinh 4
+        case 9: frames.push_back(FRAME_AUTO_IDLE); break; // set up lai chu trinh 4
         case 10: frames.push_back(FRAME_EMERGENCY_STOP); break;
 
         default:

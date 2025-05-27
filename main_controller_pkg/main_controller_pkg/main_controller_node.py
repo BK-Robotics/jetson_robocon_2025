@@ -19,7 +19,7 @@ class MainControllerNode(Node):
         self.cv_image = None
         self.imu_angle = 0.0
         self.action = 0
-        self.distance = 6.15
+        self.distance = 5.25
         self.detected_angle = 0.0
         self.base_mode = 0
 
@@ -62,10 +62,7 @@ class MainControllerNode(Node):
         # Change ROS Image message to OpenCV format
         self.cv_image = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         
-        # Display the image using OpenCV
-        # cv2.imshow("Camera Image", self.cv_image)
-        # cv2.waitKey(1)
-        self.get_logger().info('Image received and displayed.')
+        # self.get_logger().info('Image received and displayed.')
 
 
     def request_action_callback(self, request, response):
