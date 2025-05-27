@@ -50,7 +50,7 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
         out.request_action = 4;
         out.has_request_action = true;
     }
-    if (edge(11))
+    if (edge(12))
     { // L3: Reload
         out.request_odrive = 5;
         out.has_request_odrive = true;
@@ -72,7 +72,7 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
         out.request_odrive = 1;
         out.has_request_odrive = true;
     }
-    if (edge(12))
+    if (edge(11))
     { // R3: Homing
         out.request_mcu = 2;
         out.has_request_mcu = true;
@@ -106,8 +106,8 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
         /* velocity : L2 (-) + R2 (+) */
         constexpr float SAFEZONE = 0.1f;
 
-        float t_neg = s.axes[4]; // L2
-        float t_pos = s.axes[5]; // R2
+        float t_neg = s.axes[5]; // L2
+        float t_pos = s.axes[4]; // R2
 
         if (t_neg < SAFEZONE)
             t_neg = 0.0f;

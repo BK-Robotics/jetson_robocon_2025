@@ -65,7 +65,7 @@ class MainControllerNode(Node):
         # Display the image using OpenCV
         # cv2.imshow("Camera Image", self.cv_image)
         # cv2.waitKey(1)
-        self.get_logger().info('Image received and displayed.')
+        # self.get_logger().info('Image received and displayed.')
 
 
     def request_action_callback(self, request, response):

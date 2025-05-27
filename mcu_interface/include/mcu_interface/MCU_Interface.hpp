@@ -87,6 +87,8 @@ private:
     rclcpp::Subscription<robot_interfaces::msg::BaseCmd>::SharedPtr sub_base_cmd_;
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::TimerBase::SharedPtr uart_tx_timer_;
+    std::atomic<std::chrono::steady_clock::time_point> last_uart_rx_time_;
+    std::atomic<std::chrono::steady_clock::time_point> current_uart_rx_time_;
     std::thread uart_read_thread_;
 
 };
