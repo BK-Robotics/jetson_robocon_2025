@@ -122,7 +122,7 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
         cmd.velocity = raw * max_speed_;
 
         /* angle : L-Stick */
-        float lx = s.axes[0], ly = s.axes[1];
+        float lx = s.axes[2], ly = s.axes[3];
         if (hypot(lx, ly) > 0.2f)
         {
             float raw = -atan2(-lx, -ly) * 180 / M_PI;
