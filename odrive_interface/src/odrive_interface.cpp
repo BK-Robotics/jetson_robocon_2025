@@ -1,5 +1,5 @@
 #include <rclcpp/rclcpp.hpp>
-#include "robot_interfaces/srv/control.hpp"
+// #include "robot_interfaces/srv/control.hpp"
 #include "robot_interfaces/srv/push_ball.hpp"
 #include "robot_interfaces/srv/request_odrive.hpp"
 #include "odrive_interface/can_comm.hpp"
@@ -9,11 +9,11 @@
 #include <vector>
 using namespace std;
 using namespace chrono_literals;
-using ControlSrv = robot_interfaces::srv::Control;
+// using ControlSrv = robot_interfaces::srv::Control;
 using PushBall = robot_interfaces::srv::PushBall;
 using OdriveSrv = robot_interfaces::srv::RequestOdrive;
 
-static constexpr float BRACE_ON_POS = -12.0f;
+static constexpr float BRACE_ON_POS = -39.0f;
 static constexpr float BRACE_OFF_POS = 0.0f;
 static const vector<uint8_t> SHOOTER_MOTOR_IDS = {0, 1, 2};
 static const vector<uint8_t> DRIBBLE_MOTOR_IDS = {3, 4};
@@ -35,11 +35,17 @@ public:
   OdriveInterfaceNode()
       : Node("odrive_interface"), brace_on_(false), is_reload_(false)
   {
+    // 1. Khai báo kèm giá trị mặc định
+    this->declare_parameter<std::string>("can_port", "canX");
+
+    // 2. Đọc lại ngay sau khi khai báo
+    can_port = this->get_parameter("can_port").as_string();
+
     // --- CAN và các OdriveMotor ---
     can_iface_ = std::make_unique<CANInterface>();
-    if (!can_iface_->openInterface("can0"))
+    if (!can_iface_->openInterface(can_port))
     {
-      RCLCPP_FATAL(get_logger(), "Could not open can0");
+      RCLCPP_FATAL(get_logger(), "Could not open %s", can_port.c_str());
       throw runtime_error("CAN init failed");
     }
     // khởi tạo 6 motor
@@ -52,11 +58,11 @@ public:
           std::make_unique<OdriveMotor>(id, mode, can_iface_.get()));
     }
 
-    // --- Service Server /control ---
-    control_srv_ = create_service<ControlSrv>(
-        "control",
-        bind(&OdriveInterfaceNode::on_control, this,
-             placeholders::_1, placeholders::_2));
+    // // --- Service Server /control ---
+    // control_srv_ = create_service<ControlSrv>(
+    //     "control",
+    //     bind(&OdriveInterfaceNode::on_control, this,
+    //          placeholders::_1, placeholders::_2));
 
     // --- Service Server /request_odrive ---
     odrive_srv_ = create_service<OdriveSrv>(
@@ -70,30 +76,30 @@ public:
     RCLCPP_INFO(get_logger(), "odrive_interface ready.");
   }
 
-  void on_control(const shared_ptr<ControlSrv::Request> req,
-                  shared_ptr<ControlSrv::Response> res)
-  {
-    switch (req->action)
-    {
-    case 1:
-      action_push_ball(req->velocity);
-      break;
-    case 2:
-      action_toggle_brace();
-      break;
-    case 3:
-      action_dribble();
-      break;
-    case 4:
-      action_auto();
-      break;
-    default:
-      RCLCPP_WARN(get_logger(), "Unknown action %u", req->action);
-      res->success = false;
-      return;
-    }
-    res->success = true; // nếu tới được đây coi như OK
-  }
+  // void on_control(const shared_ptr<ControlSrv::Request> req,
+  //                 shared_ptr<ControlSrv::Response> res)
+  // {
+  //   switch (req->action)
+  //   {
+  //   case 1:
+  //     action_push_ball(req->velocity);
+  //     break;
+  //   case 2:
+  //     action_toggle_brace();
+  //     break;
+  //   case 3:
+  //     action_dribble();
+  //     break;
+  //   case 4:
+  //     action_auto();
+  //     break;
+  //   default:
+  //     RCLCPP_WARN(get_logger(), "Unknown action %u", req->action);
+  //     res->success = false;
+  //     return;
+  //   }
+  //   res->success = true; // nếu tới được đây coi như OK
+  // }
 
   void on_odrive_request(const shared_ptr<OdriveSrv::Request> req,
                          shared_ptr<OdriveSrv::Response> res)
@@ -106,6 +112,9 @@ public:
     case 1:
       closed_loop_control();
       break;
+    case 2:
+      homing();
+      break;
     case 3:
       reset_motors();
       break;
@@ -117,6 +126,15 @@ public:
       break;
     case 6:
       fire_manual();
+      break;
+    case 7:
+      action_toggle_brace();
+      break;
+    case 8:
+      action_dribble();
+      break;
+    case 9:
+      action_auto();
       break;
     default:
       RCLCPP_WARN(get_logger(), "Unknown action %u", req->action);
@@ -159,37 +177,44 @@ public:
     RCLCPP_INFO(get_logger(), "Clear errors done");
   }
 
-  // ---------------------------------------------------------------
-  void action_push_ball(uint8_t vel)
+  void homing()
   {
-    // 1) bắn 0-1-2 ở chế độ velocity
-    for (auto id : SHOOTER_MOTOR_IDS)
-      motors_[id]->setTarget(static_cast<float>(vel));
-    RCLCPP_INFO(get_logger(), "Shooter speed set to %.1f", vel);
-
-    // 2) sau 0.5 s gọi /push_ball – không block
-    thread([this]()
-           {
-      this_thread::sleep_for(500ms);
-
-      auto req  = std::make_shared<PushBall::Request>();
-      req->wait_for_completion = true;
-
-      if (!push_ball_client_->wait_for_service(1s)) 
-      {
-        RCLCPP_ERROR(get_logger(), "/push_ball service unavailable");
-        return;
-      }
-      push_ball_client_->async_send_request(req);
-      RCLCPP_INFO(get_logger(), "Called /push_ball (async)"); })
-        .detach();
+    motors_[BRACE_MOTOR_ID]->setHoming();
   }
+  // ---------------------------------------------------------------
+  // void action_push_ball(uint8_t vel)
+  // {
+  //   // 1) bắn 0-1-2 ở chế độ velocity
+  //   for (auto id : SHOOTER_MOTOR_IDS)
+  //     motors_[id]->setTarget(static_cast<float>(vel));
+  //   RCLCPP_INFO(get_logger(), "Shooter speed set to %.1f", vel);
+
+  //   // 2) sau 0.5 s gọi /push_ball – không block
+  //   thread([this]()
+  //          {
+  //     this_thread::sleep_for(1000ms);
+
+  //     auto req  = std::make_shared<PushBall::Request>();
+  //     req->wait_for_completion = true;
+
+  //     if (!push_ball_client_->wait_for_service(1s)) 
+  //     {
+  //       RCLCPP_ERROR(get_logger(), "/push_ball service unavailable");
+  //       return;
+  //     }
+  //     push_ball_client_->async_send_request(req);
+  //     RCLCPP_INFO(get_logger(), "Called /push_ball (async)"); })
+  //       .detach();
+  // }
 
   // ---------------------------------------------------------------
   void action_toggle_brace()
   {
     float target = (brace_on_ ? BRACE_OFF_POS : BRACE_ON_POS);
-    motors_[BRACE_MOTOR_ID]->setTarget(target);
+    if (!brace_on_)
+      motors_[BRACE_MOTOR_ID]->setTarget(target);
+    else
+      motors_[BRACE_MOTOR_ID]->setHoming();
     brace_on_ = !brace_on_;
     RCLCPP_INFO(get_logger(), "Brace %s (pos=%.1f)",
                 brace_on_ ? "ON" : "OFF", target);
@@ -350,7 +375,7 @@ public:
     // 2) sau 0.5 s gọi /push_ball – không block
     thread([this]()
            {
-      this_thread::sleep_for(500ms);
+      this_thread::sleep_for(777ms);
 
       auto req  = std::make_shared<PushBall::Request>();
       req->wait_for_completion = true;
@@ -370,11 +395,12 @@ public:
 private:
   unique_ptr<CANInterface> can_iface_;
   vector<unique_ptr<OdriveMotor>> motors_;
-  rclcpp::Service<ControlSrv>::SharedPtr control_srv_;
+  // rclcpp::Service<ControlSrv>::SharedPtr control_srv_;
   rclcpp::Service<OdriveSrv>::SharedPtr odrive_srv_;
   rclcpp::Client<PushBall>::SharedPtr push_ball_client_;
   bool brace_on_;
   bool is_reload_;
+  string can_port;
 };
 
 // ────────────────────────────────────────────────────────────────

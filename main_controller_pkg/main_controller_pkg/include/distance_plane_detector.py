@@ -5,23 +5,25 @@ from visualization_msgs.msg import Marker, MarkerArray
 from transforms3d.euler import euler2quat
 
 class PlaneDetector:
-
-    def __init__(self, distance_threshold=0.05, max_iterations=300, min_points=50, min_z=0.3, max_z=5.25):
+    def __init__(self, distance_threshold=0.05, max_iterations=300, min_points=50, min_z=0.3, max_z=8.0, min_distance=0.0, max_distance=6.2):
         # Các tham số RANSAC
         self.distance_threshold = distance_threshold
         self.max_iterations = max_iterations
         self.min_points = min_points
         self.min_z = min_z
         self.max_z = max_z
-
-        self.angle_x = 0.0
-        self.angle_y = 0.0
-        self.angle_z = 0.0
+        self.min_distance = min_distance
+        self.max_distance = max_distance
+    
     def filter_points(self, pc_data):
-        """Lọc điểm theo khoảng cách Z"""
+        """Lọc điểm theo khoảng cách Z và khoảng cách Euclidean"""
         points_xyz = []
         for p in pc_data:
-            if self.min_z < p.z < self.max_z:
+            # Tính khoảng cách Euclidean từ gốc tọa độ (camera/sensor)
+            distance = np.sqrt(p.x**2 + p.y**2 + p.z**2)
+            
+            # Lọc điểm theo cả Z và khoảng cách Euclidean
+            if self.min_z < p.z < self.max_z and self.min_distance < distance < self.max_distance:
                 points_xyz.append([p.x, p.y, p.z])
         
         return np.array(points_xyz, dtype=np.float32) if len(points_xyz) >= self.min_points else None
@@ -55,141 +57,47 @@ class PlaneDetector:
             'plane_points': plane_points_list
         }
     
-    # def ransac_plane_detection(self, points):
-    #     """Thuật toán RANSAC để tìm mặt phẳng lớn nhất trong point cloud"""
-    #     n_points = len(points)
-    #     if n_points < 3:
-    #         return None
-            
-    #     best_inliers = []
-    #     best_plane = None
-        
-    #     # RANSAC
-    #     for _ in range(self.max_iterations):
-    #         # Chọn ngẫu nhiên 3 điểm
-    #         sample_indices = np.random.choice(n_points, 3, replace=False)
-    #         p1, p2, p3 = points[sample_indices]
-            
-    #         # Tính vector pháp tuyến
-    #         v1 = p2 - p1
-    #         v2 = p3 - p1
-    #         normal = np.cross(v1, v2)
-    #         norm = np.linalg.norm(normal)
-            
-    #         if norm < 1e-6:  # Tránh chia cho 0
-    #             continue
-                
-    #         normal = normal / norm
-    #         d = -np.dot(normal, p1)
-            
-    #         # Tìm inliers
-    #         distances = np.abs(np.dot(points, normal) + d)
-    #         inliers = np.where(distances < self.distance_threshold)[0]
-            
-    #         if len(inliers) > len(best_inliers):
-    #             best_inliers = inliers
-    #             best_plane = (np.append(normal, d), inliers)
-        
-    #     # Kiểm tra số lượng inliers
-    #     if best_plane is None or len(best_inliers) < self.min_points:
-    #         return None
-            
-    #     return best_plane
-
-    def ransac_plane_detection(self, points, max_points=100000):
-        """Thuật toán RANSAC để tìm mặt phẳng lớn nhất trong point cloud
-        
-        Args:
-            points: Point cloud data
-            max_points: Số điểm tối đa được xử lý (mặc định: 10000)
-        Returns:
-            List of tuples (plane_model, inliers) for each detected plane
-        """
+    def ransac_plane_detection(self, points):
+        """Thuật toán RANSAC để tìm mặt phẳng lớn nhất trong point cloud"""
         n_points = len(points)
         if n_points < 3:
             return None
             
-        remaining_points = points
-        planes = []
+        best_inliers = []
+        best_plane = None
         
-        while len(remaining_points) > max_points:
-            # Lấy mẫu ngẫu nhiên max_points điểm
-            indices = np.random.choice(len(remaining_points), max_points, replace=False)
-            sample_points = remaining_points[indices]
+        # RANSAC
+        for _ in range(self.max_iterations):
+            # Chọn ngẫu nhiên 3 điểm
+            sample_indices = np.random.choice(n_points, 3, replace=False)
+            p1, p2, p3 = points[sample_indices]
             
-            # Tìm mặt phẳng với sample points
-            best_inliers = []
-            best_plane = None
+            # Tính vector pháp tuyến
+            v1 = p2 - p1
+            v2 = p3 - p1
+            normal = np.cross(v1, v2)
+            norm = np.linalg.norm(normal)
             
-            # RANSAC
-            for _ in range(self.max_iterations):
-                # Chọn ngẫu nhiên 3 điểm
-                sample_indices = np.random.choice(max_points, 3, replace=False)
-                p1, p2, p3 = sample_points[sample_indices]
+            if norm < 1e-6:  # Tránh chia cho 0
+                continue
                 
-                # Tính vector pháp tuyến
-                v1 = p2 - p1
-                v2 = p3 - p1
-                normal = np.cross(v1, v2)
-                norm = np.linalg.norm(normal)
-                
-                if norm < 1e-6:  # Tránh chia cho 0
-                    continue
-                    
-                normal = normal / norm
-                d = -np.dot(normal, p1)
-                
-                # Tìm inliers
-                distances = np.abs(np.dot(sample_points, normal) + d)
-                inliers = np.where(distances < self.distance_threshold)[0]
-                
-                if len(inliers) > len(best_inliers):
-                    best_inliers = inliers
-                    best_plane = (np.append(normal, d), inliers)
+            normal = normal / norm
+            d = -np.dot(normal, p1)
             
-            # Nếu tìm thấy mặt phẳng hợp lệ
-            if best_plane is not None and len(best_inliers) >= self.min_points:
-                planes.append(best_plane)
-                
-                # Loại bỏ các điểm thuộc mặt phẳng đã tìm thấy
-                mask = np.ones(len(remaining_points), dtype=bool)
-                mask[indices[best_inliers]] = False
-                remaining_points = remaining_points[mask]
-            else:
-                break
+            # Tìm inliers
+            distances = np.abs(np.dot(points, normal) + d)
+            inliers = np.where(distances < self.distance_threshold)[0]
+            
+            if len(inliers) > len(best_inliers):
+                best_inliers = inliers
+                best_plane = (np.append(normal, d), inliers)
         
-        # Xử lý các điểm còn lại
-        if len(remaining_points) >= 3:
-            best_inliers = []
-            best_plane = None
+        # Kiểm tra số lượng inliers
+        if best_plane is None or len(best_inliers) < self.min_points:
+            return None
             
-            # RANSAC cho điểm còn lại
-            for _ in range(self.max_iterations):
-                sample_indices = np.random.choice(len(remaining_points), 3, replace=False)
-                p1, p2, p3 = remaining_points[sample_indices]
-                
-                v1 = p2 - p1
-                v2 = p3 - p1
-                normal = np.cross(v1, v2)
-                norm = np.linalg.norm(normal)
-                
-                if norm < 1e-6:
-                    continue
-                    
-                normal = normal / norm
-                d = -np.dot(normal, p1)
-                
-                distances = np.abs(np.dot(remaining_points, normal) + d)
-                inliers = np.where(distances < self.distance_threshold)[0]
-                
-                if len(inliers) > len(best_inliers):
-                    best_inliers = inliers
-                    best_plane = (np.append(normal, d), inliers)
-            
-            if best_plane is not None and len(best_inliers) >= self.min_points:
-                planes.append(best_plane)
-        
-        return planes[0] if planes else None
+        return best_plane
+
     
     def analyze_plane_geometry(self, plane_points):
         """Phân tích hình học của mặt phẳng"""

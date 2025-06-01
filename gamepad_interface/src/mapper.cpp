@@ -23,32 +23,39 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
 
     if (edge(10))
     { // PS = BTN_MODE
-        semi_auto_ = !semi_auto_;
+        if (rotate_only_)
+        { // đang ở rotate-only ⇒ thoát ra manual
+            rotate_only_ = false;
+            semi_auto_ = false;
+        }
+        else
+        {
+            semi_auto_ ^= 1; // toggle manual ↔ semi-auto
+        }
         out.request_mcu = 5;
         out.has_request_mcu = true;
-        out.request_action = 5 + static_cast<int>(semi_auto_);
-        out.has_request_action = true;
     }
-
     if (edge(0))
-    { // Cross: Fire
-        out.request_action = 1;
-        out.has_request_action = true;
+    { // Cross: Rotate
+        rotate_only_ = true;
+        semi_auto_ = false;
+        out.request_mcu = 11;
+        out.has_request_mcu = true;
     }
     if (edge(2))
     { // Triangle: Brace
-        out.request_action = 2;
-        out.has_request_action = true;
+        out.request_odrive = 7;
+        out.has_request_odrive = true;
     }
     if (edge(3))
     { // Square: Dribble
-        out.request_action = 3;
-        out.has_request_action = true;
+        out.request_odrive = 8;
+        out.has_request_odrive = true;
     }
     if (edge(1))
     { // Circle: Auto
-        out.request_action = 4;
-        out.has_request_action = true;
+        out.request_odrive = 9;
+        out.has_request_odrive = true;
     }
     if (edge(12))
     { // L3: Reload
@@ -62,8 +69,6 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
         out.has_request_mcu = true;
         out.request_odrive = 0;
         out.has_request_odrive = true;
-        out.request_action = 7;
-        out.has_request_action = true;
     }
     if (edge(5))
     { // R1: Closed Loop
@@ -76,6 +81,8 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
     { // R3: Homing
         out.request_mcu = 2;
         out.has_request_mcu = true;
+        out.request_odrive = 2;
+        out.has_request_odrive = true;
     }
     if (edge(8))
     { // CREATE: Reset
@@ -92,8 +99,38 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
         out.has_request_odrive = true;
     }
 
+    if (rotate_only_)
+    {
+        if (edge(13))
+        { // Touch-pad: Fire (manual)
+            out.request_odrive = 6;
+            out.has_request_odrive = true;
+        }
+        BaseCmd cmd;
+        /* rotate : D-Pad */
+        int8_t dx = static_cast<int8_t>(s.axes[6]);
+        int8_t dy = static_cast<int8_t>(s.axes[7]);
+
+        if (dy == -1 && !dpad_locked_)
+        {
+            cmd.rotate = 0x00;
+            dpad_locked_ = true;
+        }
+        else if (dx != 0)
+        { // Left/Right
+            cmd.rotate = (dx == -1 ? 0x01 : 0x02);
+            dpad_locked_ = true;
+        }
+        else if (dx == 0 && dy == 0)
+        {
+            cmd.rotate = 0x03;    // Neutral/dừng
+            dpad_locked_ = false; // unlock
+        }
+        out.base_cmd = cmd;
+        out.has_base_cmd = true;
+    }
     /*---------------- MANUAL vs SEMI-AUTO ----------------*/
-    if (!semi_auto_)
+    else if (!semi_auto_)
     { /************  MANUAL  ************/
         if (edge(13))
         { // Touch-pad: Fire (manual)
@@ -214,8 +251,6 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
             out.has_request_mcu = true;
             out.request_odrive = 0;
             out.has_request_odrive = true;
-            out.request_action = 7;
-            out.has_request_action = true;
         }
     }
 

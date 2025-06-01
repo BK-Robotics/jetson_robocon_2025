@@ -83,21 +83,21 @@ private:
         RCLCPP_WARN(get_logger(), "RequestMcu service is not ready.");
       }
     }
-    if (mo.has_request_action)
-    {
-      auto cli = get_request_action_client();
-      if (cli->service_is_ready())
-      {
-        auto req = std::make_shared<RequestAction::Request>();
-        req->action = mo.request_action;
-        cli->async_send_request(req);
-        RCLCPP_INFO(get_logger(), "[Service] Sending RequestAction with action: %d", req->action);
-      }
-      else
-      {
-        RCLCPP_WARN(get_logger(), "RequestAction service is not ready.");
-      }
-    }
+    // if (mo.has_request_action)
+    // {
+    //   auto cli = get_request_action_client();
+    //   if (cli->service_is_ready())
+    //   {
+    //     auto req = std::make_shared<RequestAction::Request>();
+    //     req->action = mo.request_action;
+    //     cli->async_send_request(req);
+    //     RCLCPP_INFO(get_logger(), "[Service] Sending RequestAction with action: %d", req->action);
+    //   }
+    //   else
+    //   {
+    //     RCLCPP_WARN(get_logger(), "RequestAction service is not ready.");
+    //   }
+    // }
     if (mo.has_request_odrive)
     {
       auto cli = get_request_odrive_client();
@@ -124,13 +124,13 @@ private:
     return req_mcu_cli_;
   }
 
-  Client<RequestAction>::SharedPtr
-  get_request_action_client()
-  {
-    if (!req_act_cli_)
-      req_act_cli_ = create_client<RequestAction>("request_action");
-    return req_act_cli_;
-  }
+  // Client<RequestAction>::SharedPtr
+  // get_request_action_client()
+  // {
+  //   if (!req_act_cli_)
+  //     req_act_cli_ = create_client<RequestAction>("request_action");
+  //   return req_act_cli_;
+  // }
 
   Client<RequestOdrive>::SharedPtr
   get_request_odrive_client()
@@ -147,7 +147,7 @@ private:
   Publisher<robot_interfaces::msg::BaseCmd>::SharedPtr base_cmd_pub_;
   TimerBase::SharedPtr timer_;
   Client<RequestMcu>::SharedPtr req_mcu_cli_;
-  Client<RequestAction>::SharedPtr req_act_cli_;
+  // Client<RequestAction>::SharedPtr req_act_cli_;
   Client<RequestOdrive>::SharedPtr req_odrv_cli_;
   chrono::steady_clock::time_point last_send_time_;
   BaseCmd last_base_cmd_;

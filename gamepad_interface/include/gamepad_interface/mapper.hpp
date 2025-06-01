@@ -18,8 +18,8 @@ struct MapperOutput
     bool has_request_mcu{false};
     uint8_t request_mcu{0};
 
-    bool has_request_action{false};
-    uint8_t request_action{0};
+    // bool has_request_action{false};
+    // uint8_t request_action{0};
 
     bool has_request_odrive{false};
     uint8_t request_odrive{0};
@@ -38,6 +38,7 @@ private:
     float max_speed_;
     bool semi_auto_{false};   // PS toggles mode
     bool dpad_locked_{false}; // “first-press” handling
+    bool rotate_only_{false};  
     int8_t last_dpad_x_{0};
     int8_t last_dpad_y_{0};
     std::array<uint8_t, 14> last_btn_{{0}};

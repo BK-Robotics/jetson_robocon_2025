@@ -173,10 +173,7 @@ void UARTNode::process_uart_queue() {
 
 void UARTNode::send_initialization_commands() {
     std::vector<std::vector<uint8_t>> init_cmds = {
-        {0x99, 0x01, 0x05, 0x71, 0x64, 0x00, 0x64, 0x00, 0x0A, 0x00, 0x00, 0x00},
-        {0x99, 0x01, 0x00, 0x9B, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-        {0x99, 0x01, 0x00, 0x9A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-        {0x99, 0x01, 0x02, 0x9D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+        {0x99, 0x01, 0x05, 0x71, 0x64, 0x00, 0x64, 0x00, 0x0A, 0x00, 0x00, 0x00}
     };
     for (auto& frame : init_cmds){
         Suart_queue_.push(frame);
@@ -226,6 +223,11 @@ void UARTNode::handle_request_mcu_service(
         case 3: frames.push_back(FRAME_RESET_IMU); frames.push_back(FRAME_RESET_ENCODER); break;
         case 4: frames.push_back(FRAME_CLEAR_ERRORS); break;
         case 5: {
+            if(this->mode_state == 3) {
+                frames.push_back(FRAME_MANUAL_MODE);
+                this->mode_state = 1;
+                break;
+            }
             if (this->mode_state == 0) frames.push_back(FRAME_MANUAL_MODE);
             else if (this->mode_state == 1) frames.push_back(FRAME_SEMI_AUTO_MODE);
             this->mode_state = (this->mode_state + 1) % 2;
@@ -236,6 +238,10 @@ void UARTNode::handle_request_mcu_service(
         case 8: frames.push_back(FRAME_GO_STRAIGHT); break; // set up lai chu trinh 3
         case 9: frames.push_back(FRAME_TURN_LEFT); break; // set up lai chu trinh 4
         case 10: frames.push_back(FRAME_EMERGENCY_STOP); break;
+        case 11: {
+            this->mode_state = 3;
+            frames.push_back(FRAME_ROTATE_MODE); break;
+        }
 
         default:
             RCLCPP_WARN(this->get_logger(), "Unknown base_control cmd: %d", cmd);
