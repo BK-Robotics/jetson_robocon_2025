@@ -1,49 +1,49 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, TimerAction
 from launch_ros.actions import Node
 
 def generate_launch_description():
     return LaunchDescription([
-        # First, execute the astro camera launch file.
-        ExecuteProcess(
-            cmd=['ros2', 'launch', 'astra_camera', 'astro_pro_plus.launch.xml'],
+        # Gamepad Node
+        Node(
+            package='gamepad_interface',
+            executable='gamepad_node',
+            name='gamepad_node_jetson',
             output='screen',
+            remappings=[
+                ('/base_cmd', '/base_cmd_jetson'),
+                ('/request_mcu', '/request_mcu_jetson'),
+                ('/request_odrive', '/request_odrive_jetson'),
+                # Add more remaps as needed
+            ],
         ),
-        # Delay 2 seconds and then start all the nodes.
-        TimerAction(
-            period=2.0,
-            actions=[
-                Node(
-                    package='main_controller_pkg',
-                    executable='main_controller_node',
-                    name='main_controller_node',
-                    output='screen',
-                ),
-                Node(
-                    package='main_controller_pkg',
-                    executable='full_calculation_node',
-                    name='full_calculation_node',
-                    output='screen',
-                ),
-                Node(
-                    package='main_controller_pkg',
-                    executable='tf_publish_node',
-                    name='tf_publish_node',
-                    output='screen',
-                ),
-                Node(
-                    package='main_controller_pkg',
-                    executable='plane_calculation_node',
-                    name='plane_calculation_node',
-                    output='screen',
-                ),
-            ]
+        # MCU UART Node
+        Node(
+            package='mcu_interface',
+            executable='uart_node',
+            name='uart_node_jetson',
+            output='screen',
+            remappings=[
+                ('/base_cmd', '/base_cmd_jetson'),
+                ('/imu', '/imu_jetson'),
+                ('/rotate_base', '/rotate_base_jetson'),
+                ('/request_mcu', '/request_mcu_jetson'),
+                ('/push_ball', '/push_ball_jetson'),
+                # Add more remaps as needed
+            ],
         ),
-        # Optionally, uncomment to add further process launch commands.
-        # ExecuteProcess(
-        #     cmd=['rviz2', '-d', '/home/bkrobotics/jetson_robocon_2025/jetson_robocon_2025/robot_bringup/rviz/point_cloud.rviz'],
-        #     output='screen'
-        # )
+        # ODrive Interface Node
+        Node(
+            package='odrive_interface',
+            executable='odrive_interface_node',
+            name='odrive_interface_node_jetson',
+            output='screen',
+            parameters=[{'can_port': 'can0'}],
+            remappings=[
+                ('/request_odrive', '/request_odrive_jetson'),
+                ('/push_ball', '/push_ball_jetson'),
+                # Add more remaps as needed
+            ],
+        )
     ])
