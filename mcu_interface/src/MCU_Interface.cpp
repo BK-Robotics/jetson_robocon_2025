@@ -233,10 +233,10 @@ void UARTNode::handle_request_mcu_service(
             this->mode_state = (this->mode_state + 1) % 2;
             break;
         }
-        case 6: frames.push_back(FRAME_AUTO_IDLE); break; // set up lai chu trinh 1
-        case 7: frames.push_back(FRAME_GO_BACK); break; // set up lai chu trinh 2
-        case 8: frames.push_back(FRAME_GO_STRAIGHT); break; // set up lai chu trinh 3
-        case 9: frames.push_back(FRAME_TURN_LEFT); break; // set up lai chu trinh 4
+        case 6: frames.push_back(FRAME_GO_BACK); break; // set up lai chu trinh 1 FRAME_GO_STRAIGHT
+        case 7: frames.push_back(FRAME_GO_STRAIGHT); break; // set up lai chu trinh 2
+        case 8: frames.push_back(FRAME_180_ROTATE); break; // set up lai chu trinh 3
+        case 9: frames.push_back(FRAME_AUTO_IDLE); break; // set up lai chu trinh 4
         case 10: frames.push_back(FRAME_EMERGENCY_STOP); break;
         case 11: {
             this->mode_state = 3;

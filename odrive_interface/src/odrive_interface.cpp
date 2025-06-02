@@ -13,7 +13,7 @@ using namespace chrono_literals;
 using PushBall = robot_interfaces::srv::PushBall;
 using OdriveSrv = robot_interfaces::srv::RequestOdrive;
 
-static constexpr float BRACE_ON_POS = -39.0f;
+static constexpr float BRACE_ON_POS = -38.0f;
 static constexpr float BRACE_OFF_POS = 0.0f;
 static const vector<uint8_t> SHOOTER_MOTOR_IDS = {0, 1, 2};
 static const vector<uint8_t> DRIBBLE_MOTOR_IDS = {3, 4};
@@ -24,7 +24,7 @@ static constexpr float DRIBBLE_STOP_SPEED = 0.0f;
 static constexpr float RELOAD_SPEED = 5.0f;
 static constexpr float FIRE_MANUAL_SPEED = 50.0f;
 static constexpr auto DRIBBLE_FWD_DUR = 150ms;
-static constexpr auto DRIBBLE_REV_DUR = 500ms;
+static constexpr auto DRIBBLE_REV_DUR = 600ms;
 static constexpr auto DRIBBLE_STAB_DUR = 500ms;
 static constexpr float RELEASE_SPEED = 4.0f;
 static constexpr auto RELEASE_DUR = 800ms;
@@ -180,6 +180,8 @@ public:
   void homing()
   {
     motors_[BRACE_MOTOR_ID]->setHoming();
+    brace_on_ = false;
+    RCLCPP_INFO(get_logger(), "Homing done");
   }
   // ---------------------------------------------------------------
   // void action_push_ball(uint8_t vel)
@@ -197,7 +199,7 @@ public:
   //     auto req  = std::make_shared<PushBall::Request>();
   //     req->wait_for_completion = true;
 
-  //     if (!push_ball_client_->wait_for_service(1s)) 
+  //     if (!push_ball_client_->wait_for_service(1s))
   //     {
   //       RCLCPP_ERROR(get_logger(), "/push_ball service unavailable");
   //       return;
@@ -214,7 +216,14 @@ public:
     if (!brace_on_)
       motors_[BRACE_MOTOR_ID]->setTarget(target);
     else
+    {
       motors_[BRACE_MOTOR_ID]->setHoming();
+      thread([this]()
+             {
+        this_thread::sleep_for(5000ms);
+        motors_[BRACE_MOTOR_ID]->closeLoopControl(); })
+          .detach();
+    }
     brace_on_ = !brace_on_;
     RCLCPP_INFO(get_logger(), "Brace %s (pos=%.1f)",
                 brace_on_ ? "ON" : "OFF", target);
@@ -225,16 +234,16 @@ public:
   {
     thread([this]()
            {
-    for (auto id : DRIBBLE_MOTOR_IDS)
-      motors_[id]->setTarget(RELEASE_SPEED * ((id % 2) ? 1.f : -1.f));
+      for (auto id : DRIBBLE_MOTOR_IDS)
+        motors_[id]->setTarget(RELEASE_SPEED * ((id % 2) ? 1.f : -1.f));
 
-    this_thread::sleep_for(RELEASE_DUR);
+      this_thread::sleep_for(RELEASE_DUR);
 
-    // Stop dribble motors
-    for (auto id : DRIBBLE_MOTOR_IDS)
-      motors_[id]->setTarget(DRIBBLE_STOP_SPEED);
+      // Stop dribble motors
+      for (auto id : DRIBBLE_MOTOR_IDS)
+        motors_[id]->setTarget(DRIBBLE_STOP_SPEED);
 
-    RCLCPP_INFO(get_logger(), "Release sequence done"); })
+      RCLCPP_INFO(get_logger(), "Release sequence done"); })
         .detach();
   }
 
