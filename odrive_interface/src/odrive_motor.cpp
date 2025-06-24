@@ -35,6 +35,11 @@ bool OdriveMotor::fullCalibration()
     return sendCommand(0x07, {0x03});
 }
 
+bool OdriveMotor::findIndex()
+{
+    return sendCommand(0x07, {0x06});
+}
+
 bool OdriveMotor::idle()
 {
     return sendCommand(0x07, {0x01});

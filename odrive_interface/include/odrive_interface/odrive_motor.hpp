@@ -20,7 +20,9 @@ public:
     OdriveMotor(uint8_t device_id, ControlMode mode, CANInterface *can_interface);
     ~OdriveMotor();
 
+    bool sendCommand(uint8_t cmd_id, const std::vector<uint8_t> &data);
     bool fullCalibration();      // cmd 0x07, data=0x03
+    bool findIndex();            // cmd 0x07, data=0x06   
     bool idle();                 // cmd 0x07, data=0x01
     bool closeLoopControl();     // cmd 0x07, data=0x08
     bool clearError();           // cmd 0x18, data=0x00
@@ -42,7 +44,6 @@ private:
     float position_{0.0f};
 
     uint32_t computeFrameId(uint8_t cmd_id);
-    bool sendCommand(uint8_t cmd_id, const std::vector<uint8_t> &data);
     std::vector<uint8_t> floatToBytes(float value);
 };
 

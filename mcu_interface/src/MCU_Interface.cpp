@@ -119,7 +119,7 @@ void UARTNode::process_uart_queue() {
             if (i != frame.size() - 1) oss << " ";
         }
         oss << "]";
-        RCLCPP_INFO(this->get_logger(), "%s", oss.str().c_str());
+        // RCLCPP_INFO(this->get_logger(), "%s", oss.str().c_str());
     }
     else if(!Suart_queue_.empty()) {
         std::vector<uint8_t> frame = Suart_queue_.front();
@@ -142,7 +142,7 @@ void UARTNode::process_uart_queue() {
             if (i != frame.size() - 1) oss << " ";
         }
         oss << "]";
-        RCLCPP_INFO(this->get_logger(), "%s", oss.str().c_str());
+        // RCLCPP_INFO(this->get_logger(), "%s", oss.str().c_str());
     }
     else{
         if (!uart_queue_.empty()) {
@@ -166,7 +166,7 @@ void UARTNode::process_uart_queue() {
                 if (i != frame.size() - 1) oss << " ";
             }
             oss << "]";
-            RCLCPP_INFO(this->get_logger(), "%s", oss.str().c_str());
+            // RCLCPP_INFO(this->get_logger(), "%s", oss.str().c_str());
         }
     }
 }
@@ -244,7 +244,7 @@ void UARTNode::handle_request_mcu_service(
         }
 
         default:
-            RCLCPP_WARN(this->get_logger(), "Unknown base_control cmd: %d", cmd);
+            // RCLCPP_WARN(this->get_logger(), "Unknown base_control cmd: %d", cmd);
             response->success = false;
             return;
     }
@@ -314,7 +314,7 @@ void UARTNode::uart_read_loop() {
                             ss << "0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(b) << " ";
                         }
                         ss << "]";
-                        RCLCPP_WARN(this->get_logger(), "%s", ss.str().c_str());
+                        // RCLCPP_WARN(this->get_logger(), "%s", ss.str().c_str());
                         continue;
                     }
 
@@ -324,7 +324,7 @@ void UARTNode::uart_read_loop() {
                         ss << "0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(b) << " ";
                     }
                     ss << "]";
-                    RCLCPP_WARN(this->get_logger(), "%s", ss.str().c_str());
+                    // RCLCPP_WARN(this->get_logger(), "%s", ss.str().c_str());
                     
                     float z = convert_to_angle(buffer_[8], buffer_[9]);
                     robot_interfaces::msg::IMU msg;

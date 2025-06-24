@@ -85,13 +85,13 @@ bool CANInterface::sendFrame(uint32_t frame_id, const std::vector<uint8_t> &data
         return false;
     }
 
-    std::cout << "Sent CAN frame: ID=0x" << std::hex << frame_id << std::dec
-              << ", Data=";
-    for (size_t i = 0; i < data.size(); ++i)
-    {
-        std::cout << std::hex << static_cast<int>(data[i]) << " ";
-    }
-    std::cout << std::dec << std::endl;
+    // std::cout << "Sent CAN frame: ID=0x" << std::hex << frame_id << std::dec
+    //           << ", Data=";
+    // for (size_t i = 0; i < data.size(); ++i)
+    // {
+    //     std::cout << std::hex << static_cast<int>(data[i]) << " ";
+    // }
+    // std::cout << std::dec << std::endl;
     return true;
 }
 

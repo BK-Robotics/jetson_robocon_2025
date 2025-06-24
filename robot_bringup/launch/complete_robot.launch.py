@@ -2,9 +2,25 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
+    # Declare launch arguments
+    can_port_arg = DeclareLaunchArgument(
+        'can_port',
+        default_value='can1',
+        description='CAN port for ODrive interface'
+    )
+    shoot_speed_arg = DeclareLaunchArgument(
+        'shoot_speed',
+        default_value='20.0',
+        description='Shoot speed for ODrive interface'
+    )
+
     return LaunchDescription([
+        can_port_arg,
+        shoot_speed_arg,
         # Gamepad Node
         Node(
             package='gamepad_interface',
@@ -39,7 +55,10 @@ def generate_launch_description():
             executable='odrive_interface_node',
             name='odrive_interface_node_jetson',
             output='screen',
-            parameters=[{'can_port': 'can0'}],
+            parameters=[
+                {'can_port': LaunchConfiguration('can_port')},
+                {'shoot_speed': LaunchConfiguration('shoot_speed')}
+            ],
             remappings=[
                 ('/request_odrive', '/request_odrive_jetson'),
                 ('/push_ball', '/push_ball_jetson'),

@@ -36,31 +36,31 @@ MapperOutput RobotInputMapper::update(const GamepadState &s)
         out.has_request_mcu = true;
     }
     if (edge(0))
-    { // Cross: Rotate
-        rotate_only_ = true;
-        semi_auto_ = false;
-        out.request_mcu = 11;
-        out.has_request_mcu = true;
+    { // Cross: Pass
+        // rotate_only_ = true;
+        // semi_auto_ = false;
+        out.request_odrive = 10;
+        out.has_request_odrive = true;
     }
     if (edge(2))
     { // Triangle: Brace
-        out.request_odrive = 7;
-        out.has_request_odrive = true;
+        // out.request_odrive = 7;
+        // out.has_request_odrive = true;
     }
     if (edge(3))
     { // Square: Dribble
-        out.request_odrive = 8;
-        out.has_request_odrive = true;
+        // out.request_odrive = 8;
+        // out.has_request_odrive = true;
     }
     if (edge(1))
     { // Circle: Auto
-        out.request_odrive = 9;
-        out.has_request_odrive = true;
+        // out.request_odrive = 9;
+        // out.has_request_odrive = true;
     }
     if (edge(12))
     { // L3: Reload
-        out.request_odrive = 5;
-        out.has_request_odrive = true;
+        // out.request_odrive = 5;
+        // out.has_request_odrive = true;
     }
 
     if (edge(4))

@@ -76,7 +76,7 @@ private:
         auto req = std::make_shared<RequestMcu::Request>();
         req->action = mo.request_mcu;
         cli->async_send_request(req);
-        RCLCPP_INFO(get_logger(), "[Service] Sending RequestMcu with action: %d", req->action);
+        RCLCPP_INFO(get_logger(), "RequestMcu: %d", req->action);
       }
       else
       {
@@ -106,7 +106,7 @@ private:
         auto req = std::make_shared<RequestOdrive::Request>();
         req->action = mo.request_odrive;
         cli->async_send_request(req);
-        RCLCPP_INFO(get_logger(), "[Service] Sending RequestOdrive with action: %d", req->action);
+        RCLCPP_INFO(get_logger(), "RequestOdrive: %d", req->action);
       }
       else
       {

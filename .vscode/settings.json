@@ -31,7 +31,9 @@
         "functional": "cpp",
         "tuple": "cpp",
         "type_traits": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "sstream": "cpp",
+        "ostream": "cpp"
     },
     "cmake.sourceDirectory": "/home/bkrobotics/jetson_robocon_2025/jetson_robocon_2025/gamepad_interface"
 }
